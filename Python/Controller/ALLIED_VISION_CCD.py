@@ -39,6 +39,7 @@ class CCDcamera:
     # when using a different camera, please provide a config file with
     # the correct defaults.
     DEFAULTS = {'camera model': 'Manta G-234B NIR',
+                'camera id': 'DEV_000F314E1E59', # necessary to select the camera
                 'pixel size':     5.86, # micron
                 'pxls height': 1216,    # pixel in vertical
                 'pxls width': 1936,    # pixel in horizontal
@@ -46,7 +47,7 @@ class CCDcamera:
         
     camera = None
     
-    def __init__(self, camera_id):
+    def __init__(self, camera_id='DEV_000F314E1E59'):
         
         self.camera_id=camera_id
         self.vimba = pymba.Vimba()
@@ -178,27 +179,6 @@ class CCDcamera:
         frame = self.camera.acquire_frame()
         image = frame.buffer_data_numpy()
         self.camera.disarm()
-        #pix = self.pixFormat() # Check for PixelFormat
-        #if pix=='Mono8':
-        #    imgData = np.ndarray(buffer=frame.getBufferByteData(),
-        #                         dtype=np.uint8,
-        #                         shape=(frame.height,frame.width),
-        #                         order='C').copy()
-        #elif pix=='Mono12':
-        #    imgData = np.ndarray(buffer=frame.getBufferByteData(),
-        #                         dtype=np.uint16,
-        #                         shape=(frame.height,frame.width),
-        #                         order='C').copy()
-        #else:
-        #    print("Pixel Format '%s' not implemented in FROG Software." % pix)
-        #    quit()
-
-        # print(np.shape(imgData))
-        
-        # Clean up after capture
-        #self.camera.endCapture()
-        #self.camera.revokeAllFrames()
-        
         return image
 
     
@@ -281,8 +261,7 @@ if __name__ == "__main__":
     img_width = 1936
     img_height = 1216
 
-    camera_id = 123
-    ccd = CCDcamera(camera_id)
+    ccd = CCDcamera()
 
     ccd.initialize()
     # print(ccd.exposure())
