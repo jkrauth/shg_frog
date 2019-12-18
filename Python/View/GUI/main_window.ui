@@ -55,6 +55,9 @@
         </item>
         <item row="0" column="1">
          <widget class="QPushButton" name="btn_connect">
+          <property name="styleSheet">
+           <string notr="true">background-color: rgb(138, 226, 52);</string>
+          </property>
           <property name="text">
            <string>Connect</string>
           </property>
@@ -76,6 +79,9 @@
        <layout class="QGridLayout" name="gridLayout_2">
         <item row="0" column="0">
          <widget class="QPushButton" name="btn_roi">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
           <property name="maximumSize">
            <size>
             <width>100</width>
