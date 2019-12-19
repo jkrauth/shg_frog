@@ -114,3 +114,24 @@ class Spectrometer:
             return self.camera.pixFormat()
         else:
             self.camera.pixFormat(pix)
+
+    def ctr(self, wl=None):
+        if wl is None:
+            return self.ando.ctr()
+        else:
+            self.ando.ctr(wl)
+
+    def span(self, span=None):
+        if span is None:
+            return self.ando.span()
+        else:
+            self.ando.span(span)
+
+    def cwMode(self, cw=None):
+        if cw is None:
+            return self.ando.cwMode()
+        else:
+            self.ando.cwMode(cw)
+
+    def peakHoldMode(self, time):
+        self.ando.peakHoldMode(time)

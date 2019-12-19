@@ -182,6 +182,9 @@ class AndoSpectrumAnalyzerDummy:
 
         self.ip = ip
         self.gpib = gpib
+        self.wl = 390
+        self.span_par = 20
+        self.cw = 0
 
     def initialize(self):
         self.ando = 1
@@ -192,6 +195,28 @@ class AndoSpectrumAnalyzerDummy:
             pass
         else:
             print('Ando dummy is already closed!')
+
+    def ctr(self, wl=None):
+        if wl is None:
+            return self.wl
+        else:
+            self.wl = wl
+
+    def span(self, span=None):
+        if span is None:
+            return self.span_par
+        else:
+            self.span_par = span
+
+    def cwMode(self, cw=None):
+        if cw is None:
+            return self.cw
+        else:
+            self.cw = cw
+
+    def peakHoldMode(self, time):
+        pass
+
 
 
 

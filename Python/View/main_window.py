@@ -72,7 +72,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # Implement Actions for ParameterTree
         self.tree_stage_actions()
         self.tree_spect_actions()
-
+ 
     @QtCore.pyqtSlot(bool)
     def connect_action(self, checked):
         # Get dictionaries
@@ -99,7 +99,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.par.param('Newport Stage').hide()
         # needed for updating par tree in GUI
         self.parTree.setParameters(self.par, showTop=False)
-        
+       
 
     def tree_stage_actions(self):
         stage_par = self.par.param('Newport Stage')
@@ -109,19 +109,29 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def tree_spect_actions(self):
         # Get dropdown position and select respective branch of parameter tree
-        index = self.dropdown.currentIndex()
-        spect = self.DEFAULTS['dev']
-        spect_par = self.par.param(spect[index])
-        if spect[index] == 'ALLIED VISION CCD':
-            expos_par = spect_par.child('Exposure')
-            expos_par.sigValueChanged.connect(lambda param,val:self.frog.spect.exposure(val))
-            gain_par = spect_par.child('Gain')
-            gain_par.sigValueChanged.connect(lambda param,val:self.frog.spect.gain(val))
-            crop_par = spect_par.child('Crop Image')
-            crop_par.sigTreeStateChanged.connect(self.crop_action)
-            tsource_par = spect_par.child('Trigger').child('Source')
-            tsource_par.sigValueChanged.connect(lambda param,val:self.frog.spect.trigSource(val))
-            
+        #index = self.dropdown.currentIndex()
+        #spect = self.DEFAULTS['dev']
+        # Camera connections
+        spect_par = self.par.param('ALLIED VISION CCD')
+        expos_par = spect_par.child('Exposure')
+        expos_par.sigValueChanged.connect(lambda param,val:self.frog.spect.exposure(val))
+        gain_par = spect_par.child('Gain')
+        gain_par.sigValueChanged.connect(lambda param,val:self.frog.spect.gain(val))
+        crop_par = spect_par.child('Crop Image')
+        crop_par.sigTreeStateChanged.connect(self.crop_action)
+        tsource_par = spect_par.child('Trigger').child('Source')
+        tsource_par.sigValueChanged.connect(lambda param,val:self.frog.spect.trigSource(val))
+        # ANDO Connections
+        spect_par = self.par.param('ANDO Spectrometer')
+        ctr_par = spect_par.child('Center')
+        ctr_par.sigValueChanged.connect(lambda param,val:self.frog.spect.ctr(val))
+        span_par = spect_par.child('Span')
+        span_par.sigValueChanged.connect(lambda param,val:self.frog.spect.span(val))
+        cw_par = spect_par.child('CW mode')
+        cw_par.sigValueChanged.connect(lambda param,val:self.frog.spect.cwMode(val))
+        holdtime_par = spect_par.child('Rep. time')
+        holdtime_par.sigValueChanged.connect(lambda param,val:self.frog.spect.peakHoldMode(val))            
+
     def crop_action(self, param, changes):
         dictio = {'Width':'width','Height':'height',
                 'Xpos':'offsetx','Ypos':'offsety'}

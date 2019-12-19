@@ -287,8 +287,10 @@ if __name__ == "__main__":
     ccd.initialize()
     # print(ccd.exposure())
 
-    ccd.imgFormat(img_xoffset,img_yoffset,
-                  img_width,img_height)
+    ccd.roi_x = img_xoffset
+    ccd.roi_y = img_yoffset
+    ccd.roi_dx = img_width
+    ccd.roi_dy = img_height
 
     trace = np.zeros((img_width,t_steps))
     for i in range(t_steps):
