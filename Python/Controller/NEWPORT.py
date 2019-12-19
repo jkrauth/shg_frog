@@ -126,9 +126,8 @@ class SMC100:
         pos = self.query(f"PA{self.DEFAULTS['query_termination']}")
         return pos
 
-    @position.setter
-    def position(self,value):
-        self.write(f'PA{value}')        
+    def goto(self, pos):
+        self.write(f'PA{pos}')        
 
     def home(self):
         self.write('OR')
@@ -164,6 +163,7 @@ class SMC100DUMMY:
     def __init__(self,port,dev_number):
         self.dev_number = dev_number
         self.idn = '123456'
+        self.pos = 0
     
     def initialize(self):
         self.device = 1
@@ -174,6 +174,13 @@ class SMC100DUMMY:
 
     def query(self, cmd):
         return 1
+
+    def goto(self, pos):
+        self.pos = pos
+
+    @property
+    def position(self):
+        return self.pos
 
     def close(self):
         if self.device is not None:

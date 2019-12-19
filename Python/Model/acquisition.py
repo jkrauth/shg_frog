@@ -1,6 +1,6 @@
 """
 Model for the Detection device which can be either the Allied Vision
-camera or the Ando Spectrometer
+CCD camera or the Ando Spectrometer
 
 An example of how to run the code is found at the end of this file.
 
@@ -63,3 +63,54 @@ class Spectrometer:
             self.camera.close()
         elif mode == 1:
             self.ando.close()
+
+    def exposure(self, val=None):
+        if val is None:
+            return self.camera.exposure
+        else:
+            self.camera.exposure = val
+
+    def gain(self, val=None):
+        if val is None:
+            return self.camera.gain
+        else:
+            self.camera.gain = val
+            
+
+    def imgFormat(self, offsetx=None, offsety=None,
+                  width=None, height=None):
+        """
+        Get/Set position and format of the image which is acquired
+        from the camera chip. (It can be just a fraction of the full
+        format)
+        Full format is [0, 0, 1936, 1216]
+        Units in pixels!
+        """
+        if offsetx==offsety==width==height==None:
+           img_format = np.zeros(4,dtype=int)
+           img_format[0] = self.camera.roi_x
+           img_format[1] = self.camera.roi_y
+           img_format[2] = self.camera.roi_dx
+           img_format[3] = self.camera.roi_dy
+           return img_format
+        else:
+            if offsetx!=None:
+                self.camera.roi_x = offsetx
+            if offsety!=None:
+                self.camera.roi_y = offsety
+            if width!=None:
+                self.camera.roi_dx = width
+            if height!=None:
+                self.camera.roi_dy = height
+
+    def trigSource(self, source=None):
+        if source is None:
+            return self.camera.trigSource()
+        else:
+            self.camera.trigSource(source)
+
+    def pixFormat(self, pix=None):
+        if pix is None:
+            return self.camera.pixFormat()
+        else:
+            self.camera.pixFormat(pix)

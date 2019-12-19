@@ -116,32 +116,37 @@ class CCDcamera:
     def gain(self,gain):
         self.camera.Gain = gain
             
-    def imgFormat(self,
-                   offsetx=None,offsety=None,
-                   width=None,height=None):
-        """
-        Get/Set position and format of the image which is acquired
-        from the camera chip. (It can be just a fraction of the full
-        format)
-        Full format is [0, 0, 1936, 1216]
-        Units in pixels!
-        """
-        if offsetx==offsety==width==height==None:
-           img_format = np.zeros(4,dtype=int)
-           img_format[0] = self.camera.OffsetX
-           img_format[1] = self.camera.OffsetY
-           img_format[2] = self.camera.Width
-           img_format[3] = self.camera.Height
-           return img_format
-        else:
-            if offsetx!=None:
-                self.camera.OffsetX = offsetx
-            if offsety!=None:
-                self.camera.OffsetY = offsety
-            if width!=None:
-                self.camera.Width = width
-            if height!=None:
-                self.camera.Height = height
+    @property
+    def roi_x(self) -> int:
+        return self.camera.OffsetX
+
+    @roi_x.setter
+    def roi_x(self, val: int):
+        self.camera.OffsetX = val
+        
+    @property
+    def roi_y(self) -> int:
+        return self.camera.OffsetY
+
+    @roi_y.setter
+    def roi_y(self, val: int):
+        self.camera.OffsetY = val
+
+    @property
+    def roi_dx(self) -> int:
+        return self.camera.Width
+    
+    @roi_dx.setter
+    def roi_dx(self, val: int):
+        self.camera.Width = val
+
+    @property
+    def roi_dy(self) -> int:
+        return self.camera.Height
+
+    @roi_dy.setter
+    def roi_dy(self, val: int):
+        self.camera.Height = val
 
     def sensorSize(self):
         """Returns number of pixels in width and height of the sensor"""
@@ -198,12 +203,11 @@ class CCDcamera:
             self.camera.TriggerMode = onoff[mode]
 
     def trigSource(self,source=None):
-        """Get/Select trigger source
-        Keyword Arguments:
+        """Get/Select trigger source keyword arguments:
             source {str} -- Source can be one of the following strings:
                             'Freerun', 'Line1', 'Line2', 'FixedRate', 'Software'
         Returns:
-            str -- Trigger Source
+            str -- trigger source
         """
         if source==None:
             source = self.camera.TriggerSource
@@ -232,7 +236,14 @@ class CCDcameraDummy:
     camera = None
 
     def __init__(self, camera_id=1):
-        pass
+        self.exposure = 20
+        self.gain = 1
+        self.roi_x = 0
+        self.roi_y = 0
+        self.roi_dx = 100
+        self.roi_dy = 100
+        self.source = 'External'
+        self.format = 'Mono8'
 
     def initialize(self):
         self.camera = 1
@@ -244,9 +255,19 @@ class CCDcameraDummy:
         else:
             print('Camera dummy closed!')
 
-            
+    def trigSource(self, val=None):
+        if val is None:
+            return self.source
+        else:
+            self.source = val
 
-        
+    def pixFormat(self, val=None):
+        if val is None:
+            return self.format
+        else:
+            self.format = val
+
+
 if __name__ == "__main__":
 
     import matplotlib.pyplot as plt

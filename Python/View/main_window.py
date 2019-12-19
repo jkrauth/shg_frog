@@ -53,6 +53,11 @@ class MainWindow(QtWidgets.QMainWindow):
         gui_path = os.path.dirname(__file__)
         uic.loadUi(os.path.join(gui_path, 'GUI/main_window.ui'), self)
 
+        # Timer used to update certain values with a fixed interval (Timer starts after connecting)
+        self.update_timer = QtCore.QTimer()
+        self.update_timer.setInterval(500) # 1000ms = 1s
+        self.update_timer.timeout.connect(self.update_values)
+
         self.btn_connect.toggled.connect(self.connect_action)
 
         # Create Parametertree from FrogParams class
@@ -64,7 +69,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.parTree = ParameterTree()
         self.parTree.setParameters(self.par, showTop=False)
         self.gridLayout.addWidget(self.parTree,1,0,1,2)
-
+        # Implement Actions for ParameterTree
+        self.tree_stage_actions()
+        self.tree_spect_actions()
 
     @QtCore.pyqtSlot(bool)
     def connect_action(self, checked):
@@ -79,19 +86,55 @@ class MainWindow(QtWidgets.QMainWindow):
         if index==0: self.btn_roi.setEnabled(checked)
         self.btn_connect.setText(btn[checked])
         self.btn_connect.setStyleSheet(f"background-color:{col[checked]}")
-        # Open device and respective parameter branch
+        # Open device and respective branch of parameter tree
         if checked:            
             self.frog.initialize(index)
             self.par.param(dev[index]).show()
             self.par.param('Newport Stage').show()
+            self.update_timer.start()
         else:
+            self.update_timer.stop()
             self.frog.close(index)
             self.par.param(dev[index]).hide()
             self.par.param('Newport Stage').hide()
         # needed for updating par tree in GUI
         self.parTree.setParameters(self.par, showTop=False)
-
         
+
+    def tree_stage_actions(self):
+        stage_par = self.par.param('Newport Stage')
+        # Stage Position
+        go_par = stage_par.child('GoTo')
+        go_par.sigValueChanged.connect(lambda param, val: self.frog.stage.goto(val))
+
+    def tree_spect_actions(self):
+        # Get dropdown position and select respective branch of parameter tree
+        index = self.dropdown.currentIndex()
+        spect = self.DEFAULTS['dev']
+        spect_par = self.par.param(spect[index])
+        if spect[index] == 'ALLIED VISION CCD':
+            expos_par = spect_par.child('Exposure')
+            expos_par.sigValueChanged.connect(lambda param,val:self.frog.spect.exposure(val))
+            gain_par = spect_par.child('Gain')
+            gain_par.sigValueChanged.connect(lambda param,val:self.frog.spect.gain(val))
+            crop_par = spect_par.child('Crop Image')
+            crop_par.sigTreeStateChanged.connect(self.crop_action)
+            tsource_par = spect_par.child('Trigger').child('Source')
+            tsource_par.sigValueChanged.connect(lambda param,val:self.frog.spect.trigSource(val))
+            
+    def crop_action(self, param, changes):
+        dictio = {'Width':'width','Height':'height',
+                'Xpos':'offsetx','Ypos':'offsety'}
+        for param, change, data in changes:
+            if change=='value':
+                self.frog.spect.imgFormat(**{dictio[param.name()]:data})
+                #print dict[param.name()], data
+ 
+    def update_values(self):
+        """Used for values which are continuously updated using QTimer"""
+        pos_par = self.par.param('Newport Stage').child('Position')
+        pos_par.setValue(self.frog.stage.position)
+
     
 
 class FrogParams:
@@ -126,7 +169,7 @@ class FrogParams:
             {'name':'ALLIED VISION CCD','type':'group','visible':False,
              'children': [
                  {'name':'Exposure', 'type': 'float', 'value': 0.036, 'dec': True, 'step': 1, 'siPrefix': True, 'suffix': 's'},
-                 {'name':'Gain', 'type': 'float', 'value': 0, 'dec': True, 'step': 1},                 
+                 {'name':'Gain', 'type': 'float', 'value': 0, 'dec': False, 'step': 1},                 
                  {'name':'Crop Image', 'type': 'group', 'expanded':False,
                   'children': [
                      {'name':'Width','type':'int',
@@ -155,7 +198,8 @@ class FrogParams:
              ]},
             {'name':'Newport Stage','type':'group','visible':False,
              'children': [
-                 {'name':'Current Position','type':'float','value': 0.},
+                 {'name':'Position','type':'float','value': 0., 'readonly': True},
+                 {'name':'GoTo','type':'float','value': 0.},
                  {'name':'Offset','type':'float','value': 11370,
                   'limits':[0,25000]},
                  {'name':'Start Position','type':'float','value': -256},
@@ -202,7 +246,6 @@ class FrogParams:
         start_par.sigValueChanged.connect(self.showSteps)
         step_par.sigValueChanged.connect(self.showSteps)
 
-    #@pyqtSlot()
     def setCropLimits(self,param,changes):
         maxW = self.DEFAULTS['maxW']
         maxH = self.DEFAULTS['maxH']
@@ -222,23 +265,18 @@ class FrogParams:
                 mx = maxH
                 par.child('Height').setLimits([1,mx-par.child(path[2]).value()])
             
-    
-    #@pyqtSlot()
     def setStepLimits(self,param,val):
         step_par = self.par.param('Newport Stage').child('Step Size')
         step_par.setLimits([0.2,abs(val)])
         
-    #@pyqtSlot()
     def setStartPosLimits(self,param,val):
         start_pos = self.par.param('Newport Stage').child('Start Position')
         start_pos.setLimits([-val,-0.2])
         
-    #@pyqtSlot(float)
     def showPos(self,val):
-        pos = self.par.param('Newport Stage').child('Current Position')
+        pos = self.par.param('Newport Stage').child('Position')
         pos.setValue(val)
 
-    #@pyqtSlot()
     def showSteps(self,dummy):
         start_pos = self.par.param('Newport Stage').child('Start Position')
         step_size = self.par.param('Newport Stage').child('Step Size')
