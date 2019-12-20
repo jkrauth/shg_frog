@@ -18,7 +18,7 @@ cur_dir = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(cur_dir)
 python_dir = os.path.join(cur_dir, "..", "..", "Python")
 sys.path.append(python_dir)
-print(python_dir)
+
 from Controller import ANDO_SPECTROMETER, ALLIED_VISION_CCD
 
 class Spectrometer:
@@ -38,12 +38,14 @@ class Spectrometer:
             self.ando.initialize()
 
     def get_ando_spectrum(self):
+        """Get spectrum from Ando Spectrometer"""
         self.ando.sweep()
         self.ando.finish()
         y = self.ando.get_y_data()
         return y
 
     def get_camera_spectrum(self):
+        """Get spectrum from ccd camera"""
         img = self.camera.takeSingleImg()
         # Get maximum pixel value
         if max_of_trace < np.amax(img):
@@ -53,6 +55,7 @@ class Spectrometer:
         return y
 
     def get_spectrum(self, mode):
+        """Get spectrum from the connected device (ando or ccd)"""
         if mode == 0:
             return self.get_camera_spectrum()
         if mode == 1:
@@ -65,18 +68,19 @@ class Spectrometer:
             self.ando.close()
 
     def exposure(self, val=None):
+        """Set exposure of the camera"""
         if val is None:
             return self.camera.exposure
         else:
             self.camera.exposure = val
 
     def gain(self, val=None):
+        """Set gain of the camera"""
         if val is None:
             return self.camera.gain
         else:
             self.camera.gain = val
             
-
     def imgFormat(self, offsetx=None, offsety=None,
                   width=None, height=None):
         """
@@ -114,6 +118,29 @@ class Spectrometer:
             return self.camera.pixFormat()
         else:
             self.camera.pixFormat(pix)
+
+    def imgFormatFull(self):
+        """Set image format to full size of camera sensor"""
+        self.camera.roi_x = 0
+        self.camera.roi_y = 0
+        self.camera.roi_dx = self.camera.sensorSize[0]
+        self.camera.roi_dy = self.camera.sensorSize[1]
+
+    def takeSingleImg(self):
+        return self.camera.takeSingleImg()
+    
+    def takeFullImg(self):
+        """Saves current roi parameters, changes to full sensor size,
+        takes full image, restores old roi parameters in the settings."""
+        x = self.camera.roi_x
+        y = self.camera.roi_y
+        dx = self.camera.roi_dx
+        dy = self.camera.roi_dy
+        self.imgFormatFull()
+        img = self.takeSingleImg()
+        self.imgFormat(x, y, dx, dy)
+        return img
+
 
     def ctr(self, wl=None):
         if wl is None:

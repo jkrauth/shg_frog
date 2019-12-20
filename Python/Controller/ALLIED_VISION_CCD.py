@@ -148,19 +148,13 @@ class CCDcamera:
     def roi_dy(self, val: int):
         self.camera.Height = val
 
+    @property
     def sensorSize(self):
         """Returns number of pixels in width and height of the sensor"""
         width = self.camera.SensorWidth
         height = self.camera.SensorHeight
         return width, height
                 
-    def imgFormatFull(self):
-        """Set image format to full size of camera sensor"""
-        self.camera.OffsetX = 0
-        self.camera.OffsetY = 0
-        self.camera.Width = self.camera.SensorWidth
-        self.camera.Height = self.camera.SensorHeight
-
     @property
     def acquisitionMode(self):
         return self.camera.AcquisitionMode
@@ -236,6 +230,8 @@ class CCDcameraDummy:
     camera = None
 
     def __init__(self, camera_id=1):
+        self.height = 1216
+        self.width = 1936
         self.exposure = 20
         self.gain = 1
         self.roi_x = 0
@@ -266,7 +262,13 @@ class CCDcameraDummy:
             return self.format
         else:
             self.format = val
-
+    
+    def takeSingleImg(self):
+        return np.random.rand(self.height, self.width)
+    
+    @property
+    def sensorSize(self):
+        return self.width, self.height
 
 if __name__ == "__main__":
 
