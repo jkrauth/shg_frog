@@ -17,11 +17,13 @@ import yaml
 
 from PyQt5 import QtWidgets, uic, QtCore, QtGui
 from pyqtgraph.parametertree import Parameter, ParameterTree
+import pyqtgraph as pg
 
 CUR_DIR = os.path.abspath(os.path.dirname(__file__))
 config_dir = os.path.join(CUR_DIR, "..", "..", "Examples", "config")
-#sys.path.append(CUR_DIR)
+sys.path.append(CUR_DIR)
 
+from roi_window import ROIGraphics
 
 class MainWindow(QtWidgets.QMainWindow):
     """This is the main window of the GUI for the FROG interface.
@@ -72,6 +74,20 @@ class MainWindow(QtWidgets.QMainWindow):
         # Implement Actions for ParameterTree
         self.tree_stage_actions()
         self.tree_spect_actions()
+
+        # Interpret image data as row-major instead of col-major
+        pg.setConfigOptions(imageAxisOrder='row-major')
+
+        # Create the plot window
+        self.plot_class = FrogGraphics()
+        self.graphics_widget = self.plot_class.gw
+        self.gridLayout_2.addWidget(self.graphics_widget,1,0,1,3)
+ 
+        # Create instance for region of interest (ROI) window
+        # This window will be opened and closed by the class' methods
+        self.win_roi = ROIGraphics()
+        self.btn_roi.clicked.connect(self.roi_action)
+
  
     @QtCore.pyqtSlot(bool)
     def connect_action(self, checked):
@@ -108,9 +124,6 @@ class MainWindow(QtWidgets.QMainWindow):
         go_par.sigValueChanged.connect(lambda param, val: self.frog.stage.goto(val))
 
     def tree_spect_actions(self):
-        # Get dropdown position and select respective branch of parameter tree
-        #index = self.dropdown.currentIndex()
-        #spect = self.DEFAULTS['dev']
         # Camera connections
         spect_par = self.par.param('ALLIED VISION CCD')
         expos_par = spect_par.child('Exposure')
@@ -133,6 +146,7 @@ class MainWindow(QtWidgets.QMainWindow):
         holdtime_par.sigValueChanged.connect(lambda param,val:self.frog.spect.peakHoldMode(val))            
 
     def crop_action(self, param, changes):
+        """Define what happens when changing the crop/roi parameters in the parameter tree"""
         dictio = {'Width':'width','Height':'height',
                 'Xpos':'offsetx','Ypos':'offsety'}
         for param, change, data in changes:
@@ -140,12 +154,30 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.frog.spect.imgFormat(**{dictio[param.name()]:data})
                 #print dict[param.name()], data
  
+    def roi_action(self):
+        """Defines the actions when calling the ROI button"""
+        # Create ROI window with a full image taken by the camera
+        self.win_roi.createWin()
+        self.win_roi.set_image(self.frog.spect.takeFullImg())
+        # Set the ROI frame according to the crop parameters in parameter tree
+        self.win_roi.update_ROI_frame(*self.par_class.get_crop_par())
+        # If ROI changes, update parameters, update_crop_param() makes sure that crop parameters
+        # don't extend over edges of image. This means that the crop parameters which are set
+        # can differ from the roi frame in the roi window. In a second step the roi frame is then
+        # updated to reflect the actual crop parameters.
+        self.win_roi.roi.sigRegionChangeFinished.connect(self.par_class.update_crop_param)
+        self.par.sigTreeStateChanged.connect(lambda param,changes: self.win_roi.update_ROI_frame(*self.par_class.get_crop_par()))
+
+    def test_print(self, param, changes):
+        print(param)
+        print(changes)
+
     def update_values(self):
         """Used for values which are continuously updated using QTimer"""
         pos_par = self.par.param('Newport Stage').child('Position')
         pos_par.setValue(self.frog.stage.position)
 
-    
+
 
 class FrogParams:
     """
@@ -225,6 +257,7 @@ class FrogParams:
                               children=params)
         
         ### Some settings regarding CCD parameters ###
+        # Create limits for crop settings
         crop_par = self.par.param('ALLIED VISION CCD').child('Crop Image')
         width_par = crop_par.child('Width')
         height_par = crop_par.child('Height')
@@ -252,7 +285,7 @@ class FrogParams:
         step_par.setLimits([0.2,abs(start_par.value())])
         start_par.sigValueChanged.connect(self.setStepLimits)
         
-        # Always update Number of steps, given by start pos and step size
+        # Always update number of steps, given by start pos and step size
         start_par.sigValueChanged.connect(self.showSteps)
         step_par.sigValueChanged.connect(self.showSteps)
 
@@ -274,7 +307,40 @@ class FrogParams:
             if path[2]=='Ypos':
                 mx = maxH
                 par.child('Height').setLimits([1,mx-par.child(path[2]).value()])
-            
+
+    def get_crop_par(self):
+        """ Get the crop parameters from parameter tree"""
+        roi_par = self.par.param('ALLIED VISION CCD').child('Crop Image')
+        xpos = roi_par.child('Xpos').value()
+        ypos = roi_par.child('Ypos').value()
+        width = roi_par.child('Width').value()
+        height = roi_par.child('Height').value()
+        return xpos, ypos, width, height
+
+    def update_crop_param(self, roi):
+        """Used as action when changing roi in roi window"""
+        pos = roi.pos()
+        size = roi.size()
+        # Update the CROP parameters regarding region of interest
+        roi_par = self.par.param('ALLIED VISION CCD').child('Crop Image')
+        # Create even numbers. Odd numbers crash with some cameras
+        # and make sure that offset and size stays in allowed range
+        maxSize = [self.DEFAULTS['maxW'], self.DEFAULTS['maxH']]
+        for i in range(2):
+            if pos[i] < 0: 
+                pos[i] = 0
+            if size[i] > maxSize[i]: 
+                size[i] = maxSize[i]
+                pos[i] = 0
+            if size[i]+pos[i] > maxSize[i]:
+                size[i] = maxSize[i] - pos[i]
+            pos[i] = round(pos[i]/2.)*2
+            size[i] = round(size[i]/2.)*2
+        roi_par.child('Xpos').setValue(int(pos[0]))
+        roi_par.child('Ypos').setValue(int(pos[1]))
+        roi_par.child('Width').setValue(int(size[0]))
+        roi_par.child('Height').setValue(int(size[1]))
+
     def setStepLimits(self,param,val):
         step_par = self.par.param('Newport Stage').child('Step Size')
         step_par.setLimits([0.2,abs(val)])
@@ -314,6 +380,39 @@ class FrogParams:
             print('  ----------')
 
     """ End FrogParams class """
+
+
+class FrogGraphics:
+    """
+    Class which implements the content for the graphics widget.
+    It shows the recorded data and updates during measurement.
+    """ 
+    def __init__(self):
+
+        # Enable antialiasing for prettier plots
+        pg.setConfigOptions(antialias=True)
+
+        self.gw = pg.GraphicsLayoutWidget()
+        pl = self.gw.addPlot(title='Single Slice')
+        pl.setLabel('bottom', "Frequency", units='AU')
+        pl.setLabel('left', "Intensity", units='AU')
+        self.plot1 = pl.plot()
+        vb_full = self.gw.addPlot(title='FROG Trace')
+        vb_full.setLabel('bottom',"Time Delay", units='AU')
+        vb_full.setLabel('left',"Frequency", units='AU')
+        self.plot2 = pg.ImageItem()
+        vb_full.addItem(self.plot2)
+
+    def updateGraphics(self,plot_num,data):
+        if plot_num==1:
+            self.plot1.setData(np.sum(data,0))
+        if plot_num==3:
+            self.plot1.setData(data)
+        if plot_num==2:
+            data = np.flipud(data)
+            self.plot2.setImage(data)
+
+    """ End FROG graphics class """
 
 
 if __name__ == "__main__":
