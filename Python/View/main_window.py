@@ -23,6 +23,7 @@ CUR_DIR = os.path.abspath(os.path.dirname(__file__))
 config_dir = os.path.join(CUR_DIR, "..", "..", "Examples", "config")
 sys.path.append(CUR_DIR)
 
+import general_worker
 from roi_window import ROIGraphics
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -42,7 +43,11 @@ class MainWindow(QtWidgets.QMainWindow):
         'btn_color': {
             True: 'rgb(239, 41, 41)',
             False: 'rgb(138, 226, 52)',
-        }
+        },
+        'btn_measure': {
+            True: 'Stop',
+            False: 'Measure',
+        },
     }
 
     def __init__(self, frog=None, parent=None):
@@ -60,7 +65,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.update_timer.setInterval(500) # 1000ms = 1s
         self.update_timer.timeout.connect(self.update_values)
 
+        # Connect button
         self.btn_connect.toggled.connect(self.connect_action)
+
+        # Measure button
+        self.btn_measure.toggled.connect(self.measure_action)
 
         # Create Parametertree from FrogParams class
         self.par_class = FrogParams()
@@ -88,6 +97,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.win_roi = ROIGraphics()
         self.btn_roi.clicked.connect(self.roi_action)
 
+
+
  
     @QtCore.pyqtSlot(bool)
     def connect_action(self, checked):
@@ -102,6 +113,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if index==0: self.btn_roi.setEnabled(checked)
         self.btn_connect.setText(btn[checked])
         self.btn_connect.setStyleSheet(f"background-color:{col[checked]}")
+        self.btn_measure.setEnabled(checked)
         # Open device and respective branch of parameter tree
         if checked:            
             self.frog.initialize(index)
@@ -166,17 +178,58 @@ class MainWindow(QtWidgets.QMainWindow):
         # can differ from the roi frame in the roi window. In a second step the roi frame is then
         # updated to reflect the actual crop parameters.
         self.win_roi.roi.sigRegionChangeFinished.connect(self.par_class.update_crop_param)
-        self.par.sigTreeStateChanged.connect(lambda param,changes: self.win_roi.update_ROI_frame(*self.par_class.get_crop_par()))
+        self.par.sigTreeStateChanged.connect(\
+            lambda param,changes: self.win_roi.update_ROI_frame(*self.par_class.get_crop_par()))
 
-    def test_print(self, param, changes):
-        print(param)
-        print(changes)
+
+    @QtCore.pyqtSlot(bool)
+    def measure_action(self, checked):
+        btn = self.DEFAULTS['btn_measure']
+        self.btn_measure.setText(btn[checked])
+        if checked: 
+            self.progress.setValue(0)
+            self.frog.stop_measure = False
+            # Do actual measurement loop (in separate thread)
+            self.start_measure()
+        if not checked:
+            self.frog.stop_measure = True
+
+    def start_measure(self):
+        """Retrieves measurement settings and wraps the measure function 
+        into a thread. Then the signals are implemented."""
+        # Get settings
+        max_meas = self.par.param('Newport Stage').child('Number of steps').value()
+        self.measure_thread = general_worker.MeasureThread(self.frog.measure, max_meas)
+        # Actions when measurement finishes
+        self.measure_thread.finished.connect(self.measure_thread.deleteLater)
+        self.measure_thread.finished.connect(self.del_mthread)
+        self.measure_thread.finished.connect(self.automatic_toggle)
+        # Connect progress button with progress signal
+        self.measure_thread.sig_progress.connect(self.modifyProgress)
+        # Run measurement
+        self.measure_thread.start()
+
+    def del_mthread(self):
+        """Delete measure_thread."""
+        del self.measure_thread
+
+    def automatic_toggle(self):
+        """Toggles measurement button if measurement finished without manual stop."""
+        if not self.frog.stop_measure:
+            self.btn_measure.toggle()
+        else:
+            pass
 
     def update_values(self):
         """Used for values which are continuously updated using QTimer"""
         pos_par = self.par.param('Newport Stage').child('Position')
         pos_par.setValue(self.frog.stage.position)
 
+    def modifyProgress(self, iter_val):
+       """For changing the progress bar, using an iteration value"""
+       max_val = self.par.param('Newport Stage').child('Number of steps').value()
+       val = int(100*(float(iter_val)/float(max_val)))
+       self.progress.setValue(val)    
 
 
 class FrogParams:

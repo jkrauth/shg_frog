@@ -11,12 +11,13 @@ Python Version: 3.7
 
 import os
 import sys
+import time
 
 cur_dir = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(cur_dir)
 python_dir = os.path.join(cur_dir, "..", "..", "Python")
 sys.path.append(python_dir)
-print(python_dir)
+
 from Controller import NEWPORT
 from Model import acquisition
 
@@ -29,15 +30,23 @@ class FROG:
             self.stage = NEWPORT.SMC100(port='/dev/ttyUSB0', dev_number=1)
         self.spect = acquisition.Spectrometer(test)
 
+        self.stop_measure = False
+        
+
     def initialize(self, mode=0):
         self.stage.initialize()
         self.spect.initialize(mode)
 
-    def set_path_diff(self):
-        pass
 
+    def measure(self, sig_progress, max_meas):
+        for i in range(max_meas):
+            print("Loop...")
+            time.sleep(1)
+            sig_progress.emit(i+1)
+            if self.stop_measure: break
+        print("measurement finished!")
     
-
+    
     def close(self, mode=0):
         self.stage.close()
         self.spect.close(mode)
