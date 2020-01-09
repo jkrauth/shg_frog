@@ -93,7 +93,7 @@ class SMC100:
         idn = self.query("ID{}".format(self.DEFAULTS['query_termination']))
         return idn
         
-    def wait_move_finish(self,interval):
+    def wait_move_finish(self, interval):
         """ Interval given in seconds """
         errors, status = self.error_and_controller_status()
         while (status == self.CTRL_STATUS['moving']):
@@ -188,9 +188,9 @@ class SMC100DUMMY:
         else:
             print('Newport device is already closed')
 
-    def wait_move_finish(self,interval):
-        pass
-
+    def wait_move_finish(self, interval):
+        sleep(interval)
+        print("Movement finished")
     
 
 if __name__ == "__main__":
