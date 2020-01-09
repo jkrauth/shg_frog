@@ -23,6 +23,8 @@ from Controller import ANDO_SPECTROMETER, ALLIED_VISION_CCD
 
 class Spectrometer:
 
+    mode = None # Is set upon initialization
+
     def __init__(self, test=True):
         if test:
             self.ando = ANDO_SPECTROMETER.AndoSpectrumAnalyzerDummy()
@@ -36,6 +38,7 @@ class Spectrometer:
             self.camera.initialize()
         elif mode == 1:
             self.ando.initialize()
+        self.mode = mode
 
     def get_ando_spectrum(self):
         """Get spectrum from Ando Spectrometer"""
@@ -47,24 +50,21 @@ class Spectrometer:
     def get_camera_spectrum(self):
         """Get spectrum from ccd camera"""
         img = self.camera.takeSingleImg()
-        # Get maximum pixel value
-        if max_of_trace < np.amax(img):
-            max_of_trace = np.amax(img)
         # Project image onto a single axis and normalize
         y = np.divide(np.sum(img,0),float(np.ma.size(img,0)))
         return y
 
-    def get_spectrum(self, mode):
+    def get_spectrum(self):
         """Get spectrum from the connected device (ando or ccd)"""
-        if mode == 0:
+        if self.mode == 0:
             return self.get_camera_spectrum()
-        if mode == 1:
+        if self.mode == 1:
             return self.get_ando_spectrum()
 
-    def close(self, mode):
-        if mode == 0:
+    def close(self):
+        if self.mode == 0:
             self.camera.close()
-        elif mode == 1:
+        elif self.mode == 1:
             self.ando.close()
 
     def exposure(self, val=None):
