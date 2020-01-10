@@ -14,6 +14,7 @@ Python Version: 3.7
 import sys
 import os
 import yaml
+import numpy as np
 
 from PyQt5 import QtWidgets, uic, QtCore, QtGui
 from pyqtgraph.parametertree import Parameter, ParameterTree
@@ -122,7 +123,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.update_timer.start()
         else:
             self.update_timer.stop()
-            self.frog.close(index)
+            self.frog.close()
             self.par.param(dev[index]).hide()
             self.par.param('Newport Stage').hide()
         # needed for updating par tree in GUI
@@ -198,14 +199,19 @@ class MainWindow(QtWidgets.QMainWindow):
         """Retrieves measurement settings and wraps the measure function 
         into a thread. Then the signals are implemented."""
         # Get settings
+        start_pos = self.par.param('Newport Stage').child('Start Position').value()
         max_meas = self.par.param('Newport Stage').child('Number of steps').value()
-        self.measure_thread = general_worker.MeasureThread(self.frog.measure, max_meas)
+        step_size = self.par.param('Newport Stage').child('Step Size').value()
+        self.measure_thread = general_worker.MeasureThread(self.frog.measure, \
+            start_pos, max_meas, step_size)
         # Actions when measurement finishes
         self.measure_thread.finished.connect(self.measure_thread.deleteLater)
         self.measure_thread.finished.connect(self.del_mthread)
         self.measure_thread.finished.connect(self.automatic_toggle)
         # Connect progress button with progress signal
         self.measure_thread.sig_progress.connect(self.modifyProgress)
+        # Connect plot update with measure signal
+        self.measure_thread.sig_measure.connect(self.plot_class.updateGraphics)
         # Run measurement
         self.measure_thread.start()
 
