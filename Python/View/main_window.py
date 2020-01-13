@@ -16,7 +16,7 @@ import os
 import yaml
 import numpy as np
 import imageio
-from datetime import datetime
+
 
 from PyQt5 import QtWidgets, uic, QtCore, QtGui
 from pyqtgraph.parametertree import Parameter, ParameterTree
@@ -237,46 +237,36 @@ class MainWindow(QtWidgets.QMainWindow):
             pass
 
     def save_trace(self):
-        outfolder = self.DEFAULTS['data folder']
-        filename = self.DEFAULTS['file name']
-        filetype = self.DEFAULTS['file type']
-        if not os.path.exists(outfolder):
-            os.makedirs(outfolder)
-        filename_numbered = filename + "_{:03}"
-        save_path = outfolder + filename_numbered
-        file_num = 1
-        while os.path.exists(save_path.format(file_num) + filetype):
-            file_num += 1
-        # Scale image according to bit depth
-        pix_param = self.par.param('ALLIED VISION CCD').child('PixelFormat')
-        if pix_param.value() == 'Mono8':
-            bit_type = np.uint8
-            scale = 255.
-        elif pix_param.value() == 'Mono12':
-            bit_type = np.uint16
-            scale = 65535.
-        frog_array_scaled = np.rint(scale * self.frog.measured_trace / np.amax(self.frog.measured_trace)).astype(int)
-        # Save matrix as image with numbered filename
-        imageio.imsave(save_path.format(file_num) + filetype, \
-                       frog_array_scaled.astype(bit_type))
-        # prop_stage = self.par.param('Newport Stage')
-        # prop_ccd = self.par.param('ALLIED VISION CCD')
-        # properties = {'measurement number':file_num,
-        #               'comment':'',
-        #               'date':datetime.now().strftime('%Y-%m-%d'),
-        #               'time':datetime.now().strftime('%H:%M:%S'),
-        #               'ccddt':ccddt,
-        #               'ccddv':ccddv,
-        #               'center position':prop_stage.child('Offset').value(),
-        #               'step size':prop_stage.child('Step Size').value(),
-        #               'step number':prop_stage.child('Number of steps').value(),
-        #               'exposure time':prop_ccd.child('Exposure').value(),
-        #               'gain':prop_ccd.child('Gain').value(),
-        #               'imageformat':prop_ccd.child('PixelFormat').value().decode(),
-        #               'max Intensity': int(max_of_trace),}
-        # # Add a yaml settings file to the measurement, with numbered name 
-        # with open('%s.yml' % (save_path.format(file_num)), 'w') as f:
-        #     f.write(yaml.dump(properties, default_flow_style=False))
+        if self.frog.measured_trace is not None:
+            outfolder = self.DEFAULTS['data folder']
+            filename = self.DEFAULTS['file name']
+            filetype = self.DEFAULTS['file type']
+            if not os.path.exists(outfolder):
+                os.makedirs(outfolder)
+            filename_numbered = filename + "_{:03}"
+            save_path = outfolder + filename_numbered
+            file_num = 1
+            while os.path.exists(save_path.format(file_num) + filetype):
+                file_num += 1
+            pix_format = self.par.param('ALLIED VISION CCD').child('PixelFormat').value()
+            if pix_format == 'Mono8': bit_type = np.uint8
+            elif pix_format == 'Mono12': bit_type = np.uint16
+            # Save matrix as image with numbered filename
+            imageio.imsave(save_path.format(file_num) + filetype, \
+                        self.frog.measured_trace.astype(bit_type))
+            # Save settings               
+            # Get settings from frog instance
+            settings = self.frog.used_settings
+            # Add additional information
+            settings['measurement number'] = file_num
+            settings['center position'] = self.par.param('Newport Stage').child('Offset').value()
+            # maybe add possibility to add a comment: settings['comment'] = 
+            # Create yaml settings file to the measurement, with numbered name 
+            with open('%s.yml' % (save_path.format(file_num)), 'w') as f:
+                f.write(yaml.dump(settings, default_flow_style=False))
+            print('Measurement and settings saved!')
+        else:
+            print('Do measurement first!')
         
 
     def update_values(self):
