@@ -22,19 +22,6 @@
       </property>
       <widget class="QWidget" name="gridLayoutWidget">
        <layout class="QGridLayout" name="gridLayout">
-        <item row="2" column="0">
-         <widget class="QPushButton" name="btn_measure">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
-          <property name="text">
-           <string>Measure</string>
-          </property>
-          <property name="checkable">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
         <item row="1" column="0" colspan="2">
          <widget class="QWidget" name="widget" native="true">
           <property name="sizePolicy">
@@ -42,6 +29,26 @@
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <widget class="QPushButton" name="btn_save">
+          <property name="text">
+           <string>Save</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QPushButton" name="btn_connect">
+          <property name="styleSheet">
+           <string notr="true">background-color: rgb(138, 226, 52);</string>
+          </property>
+          <property name="text">
+           <string>Connect</string>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
           </property>
          </widget>
         </item>
@@ -59,23 +66,23 @@
           </item>
          </widget>
         </item>
-        <item row="0" column="1">
-         <widget class="QPushButton" name="btn_connect">
-          <property name="styleSheet">
-           <string notr="true">background-color: rgb(138, 226, 52);</string>
+        <item row="2" column="0">
+         <widget class="QPushButton" name="btn_measure">
+          <property name="enabled">
+           <bool>false</bool>
           </property>
           <property name="text">
-           <string>Connect</string>
+           <string>Measure</string>
           </property>
           <property name="checkable">
            <bool>true</bool>
           </property>
          </widget>
         </item>
-        <item row="2" column="1">
+        <item row="3" column="0" colspan="2">
          <widget class="QPushButton" name="btn_phase">
           <property name="text">
-           <string>PhaseRetrieve</string>
+           <string>Retrieve Phase</string>
           </property>
          </widget>
         </item>

@@ -15,6 +15,8 @@ import sys
 import os
 import yaml
 import numpy as np
+import imageio
+from datetime import datetime
 
 from PyQt5 import QtWidgets, uic, QtCore, QtGui
 from pyqtgraph.parametertree import Parameter, ParameterTree
@@ -51,6 +53,13 @@ class MainWindow(QtWidgets.QMainWindow):
         },
     }
 
+    # Add defaults from config file
+    with open(config_dir + '/config.yml','r') as f:
+        CONFIG = yaml.load(f,Loader=yaml.FullLoader)
+    DEFAULTS['data folder'] = CONFIG['data folder']
+    DEFAULTS['file name'] = CONFIG['file name']
+    DEFAULTS['file type'] = CONFIG['file type']
+
     def __init__(self, frog=None, parent=None):
         super().__init__(parent)
 
@@ -71,6 +80,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Measure button
         self.btn_measure.toggled.connect(self.measure_action)
+
+        # Save button
+        self.btn_save.clicked.connect(self.save_trace)
 
         # Create Parametertree from FrogParams class
         self.par_class = FrogParams()
@@ -99,8 +111,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.btn_roi.clicked.connect(self.roi_action)
 
 
-
- 
     @QtCore.pyqtSlot(bool)
     def connect_action(self, checked):
         # Get dictionaries
@@ -225,6 +235,49 @@ class MainWindow(QtWidgets.QMainWindow):
             self.btn_measure.toggle()
         else:
             pass
+
+    def save_trace(self):
+        outfolder = self.DEFAULTS['data folder']
+        filename = self.DEFAULTS['file name']
+        filetype = self.DEFAULTS['file type']
+        if not os.path.exists(outfolder):
+            os.makedirs(outfolder)
+        filename_numbered = filename + "_{:03}"
+        save_path = outfolder + filename_numbered
+        file_num = 1
+        while os.path.exists(save_path.format(file_num) + filetype):
+            file_num += 1
+        # Scale image according to bit depth
+        pix_param = self.par.param('ALLIED VISION CCD').child('PixelFormat')
+        if pix_param.value() == 'Mono8':
+            bit_type = np.uint8
+            scale = 255.
+        elif pix_param.value() == 'Mono12':
+            bit_type = np.uint16
+            scale = 65535.
+        frog_array_scaled = np.rint(scale * self.frog.measured_trace / np.amax(self.frog.measured_trace)).astype(int)
+        # Save matrix as image with numbered filename
+        imageio.imsave(save_path.format(file_num) + filetype, \
+                       frog_array_scaled.astype(bit_type))
+        # prop_stage = self.par.param('Newport Stage')
+        # prop_ccd = self.par.param('ALLIED VISION CCD')
+        # properties = {'measurement number':file_num,
+        #               'comment':'',
+        #               'date':datetime.now().strftime('%Y-%m-%d'),
+        #               'time':datetime.now().strftime('%H:%M:%S'),
+        #               'ccddt':ccddt,
+        #               'ccddv':ccddv,
+        #               'center position':prop_stage.child('Offset').value(),
+        #               'step size':prop_stage.child('Step Size').value(),
+        #               'step number':prop_stage.child('Number of steps').value(),
+        #               'exposure time':prop_ccd.child('Exposure').value(),
+        #               'gain':prop_ccd.child('Gain').value(),
+        #               'imageformat':prop_ccd.child('PixelFormat').value().decode(),
+        #               'max Intensity': int(max_of_trace),}
+        # # Add a yaml settings file to the measurement, with numbered name 
+        # with open('%s.yml' % (save_path.format(file_num)), 'w') as f:
+        #     f.write(yaml.dump(properties, default_flow_style=False))
+        
 
     def update_values(self):
         """Used for values which are continuously updated using QTimer"""
