@@ -2,9 +2,8 @@
 
 Software for a pulse measurement using the __SHG FROG__ technique.
 
-Want to know more about FROG?   
-R. Trebino, Frequency-Resolved Optical Gating: the Measurement of Ultrashort Laser Pulses,  
-Kluwer, Boston (2002)
+> Want to know more about FROG?   
+> R. Trebino, Frequency-Resolved Optical Gating: the Measurement of Ultrashort Laser Pulses, Kluwer, Boston (2002)
 
 ### What is this repository for? ###
 
@@ -13,9 +12,9 @@ Kluwer, Boston (2002)
   Commercial devices exist, but are rather expensive. A home-build device can save a lot of 
   money.
   The code in this repository provides: 
-    * Connection with, controll over and readout of a motorized translation stage 
+    * Connection with, control over and readout of a motorized translation stage 
     * Connection with and readout of a frequency resolved detection device
-    * Building the so-called FROG trace
+    * Measurement of the so-called FROG trace
     * Phase retrieval algorithm from the trace, in order to obtain the original pulse shape.
       The phase retrieval algorithm is based on the Matlab package by Steven Byrnes.
 * The software runs in two modes: The frequency-resolved detection can be either a commercial spectrometer (e.g. ANDO), or a grating-CCD combination.
@@ -23,8 +22,7 @@ Kluwer, Boston (2002)
 
 ### How to set up? ###
 
-#### Sofware ####
-* Usage: download the repository.
+#### Software ####
 * Python 3.7
 * the following packages are used in the repo:
     * pyQt5
@@ -36,10 +34,10 @@ Kluwer, Boston (2002)
     * the pymba package [https://github.com/morefigs/pymba]
       (connection to the ALLIED VISION CCD camera via Ethernet)
     * pyYAML
-* execute 
-    * frog.py to call the main() function and start the software.
+* run `python Examples/start_gui.py` to start the software, 
+the option `python Examples/start_gui.py test` uses virtual devices.
 * calibration
-    * The calibration of the camera is done via the config.yml file in the config folder,
+    * The calibration of the camera is done via the config.yml file in the Examples/config folder,
       where the according numbers have to be set.
 
 
@@ -48,7 +46,7 @@ Kluwer, Boston (2002)
 ##### Newport Stage #####
 * The best and cheapest solution to get a motorized translation stage in our case was to buy an
   actuator (Newport TRA25-CC) and combine it with an existing manual stage.
-* The minimum incremental motion of this device is 0.2 micron. For laser pulses with a pulse lenght
+* The minimum incremental motion of this device is 0.2 micron. For laser pulses with a pulse length
   of <20fs a better actuator might be considered.
 
 ##### ANDO Spectrometer #####
