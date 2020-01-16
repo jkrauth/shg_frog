@@ -24,6 +24,7 @@ config_dir = os.path.join(python_dir, "..", "Examples", "config")
 
 from Controller import NEWPORT
 from Model import acquisition
+from Model import phase_retrieval
 
 speedoflight = 299792458. #m/s
 
@@ -50,7 +51,8 @@ class FROG:
         self.measured_trace = None
         self.used_settings = None
         self.stop_measure = False
-        
+
+        self.algo = phase_retrieval.PhaseRetrieval()
 
     def initialize(self, mode=0):
         self.stage.initialize()
@@ -155,6 +157,16 @@ class FROG:
             # One has to get that information from the ando settings.
             raise Exception("Calibration for ANDO spectrometer not yet implemented!")
         return vperpx
+
+    def retrieve_phase(self, sig_retdata, sig_retlabels, sig_rettitles, sig_retaxis, pixels, GTol, iterMAX):
+        if self.measured_trace is not None:
+            ccddt = self.used_settings['ccddt']
+            ccddv = self.used_settings['ccddv']
+            self.algo.prepFROG(ccddt=ccddt, ccddv=ccddv, N=pixels, ccdimg=self.measured_trace, flip=2)
+            self.algo.retrievePhase(GTol=GTol, iterMAX=iterMAX, signal_data=sig_retdata, \
+                signal_label=sig_retlabels, signal_title=sig_rettitles, signal_axis=sig_retaxis)
+        else: 
+            raise Exception('No recorded trace in buffer!')
 
     def close(self):
         self.stage.close()
