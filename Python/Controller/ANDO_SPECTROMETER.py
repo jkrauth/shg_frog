@@ -12,7 +12,12 @@ Python Version: 3.7
 import numpy as np
 import time
 
-from plx_gpib_ethernet import PrologixGPIBEthernet
+try:
+    from plx_gpib_ethernet import PrologixGPIBEthernet
+except ImportError as err:
+    print("Can't import PrologixGPIBEthernet module for ANDO Spectrometer!\n" +
+          "Install plx_gpib_ethernet package from: \n" +
+          "https://github.com/nelsond/prologix-gpib-ethernet")
 #install plx_gpib_ethernet package from here: 
 #https://github.com/nelsond/prologix-gpib-ethernet
 
