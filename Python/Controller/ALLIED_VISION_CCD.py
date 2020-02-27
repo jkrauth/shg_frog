@@ -30,7 +30,7 @@ import time
 import pymba
 
 cur_dir = os.path.abspath(os.path.dirname(__file__))
-config_dir = os.path.join(cur_dir, "..","..","Examples","config")
+config_dir = os.path.join(cur_dir, "..","..","Examples","config/")
 config_file = "config.yml"
 
 class CCDcamera:
@@ -73,7 +73,7 @@ class CCDcamera:
             with open(path,'r') as f:
                 self.DEFAULTS = yaml.load(f,Loader=yaml.FullLoader)
             model = self.DEFAULTS['camera model']
-            print(f"Loaded onfig file {config_file} for Allied Vision camera {model}.")
+            print(f"Loaded config file {config_file} for Allied Vision camera {model}.")
         # And settings:
         #not yet implemented
         
