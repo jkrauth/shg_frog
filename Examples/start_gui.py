@@ -20,7 +20,8 @@ sys.path.append(PYTHON_DIR)
 from Model.frog import FROG
 from View.main_window import MainWindow
 
-experiment = FROG()
+test_option = 'test' in sys.argv
+experiment = FROG(test=test_option)
 
 app = QApplication(sys.argv)
 m = MainWindow(frog=experiment)
