@@ -2,6 +2,8 @@
 This script creates an instance of the frog and hands it over
 to the GUI.
 
+If the argument >test< is provided, the program is run with virtual devices.
+
 File name: start_gui.py
 Author: Julian Krauth
 Date created: 2019/12/02
@@ -20,10 +22,13 @@ sys.path.append(PYTHON_DIR)
 from Model.frog import FROG
 from View.main_window import MainWindow
 
-test_option = 'test' in sys.argv
-experiment = FROG(test=test_option)
+# Implement application execution options:
+# Running a test mode with virtual devices 
+test_mode = 'test' in sys.argv
+
+experiment = FROG(test=test_mode)
 
 app = QApplication(sys.argv)
-m = MainWindow(frog=experiment)
+m = MainWindow(frog=experiment, test=test_mode)
 m.show()
 app.exit(app.exec_())

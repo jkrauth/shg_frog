@@ -61,7 +61,7 @@ class MainWindow(QtWidgets.QMainWindow):
     DEFAULTS['file name'] = CONFIG['file name']
     DEFAULTS['file type'] = CONFIG['file type']
 
-    def __init__(self, frog=None, parent=None):
+    def __init__(self, frog=None, parent=None, test=False):
         super().__init__(parent)
 
         # The object which is connected to the window
@@ -71,6 +71,9 @@ class MainWindow(QtWidgets.QMainWindow):
         gui_path = os.path.dirname(__file__)
         uic.loadUi(os.path.join(gui_path, 'GUI/main_window.ui'), self)
 
+        # Change window title if running in test mode
+        if test: self.setWindowTitle('SHG Frog (TEST)')
+        
         # Timer used to update certain values with a fixed interval (Timer starts after connecting)
         self.update_timer = QtCore.QTimer()
         self.update_timer.setInterval(500) # 1000ms = 1s
