@@ -73,6 +73,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Change window title if running in test mode
         if test: self.setWindowTitle('SHG Frog (TEST)')
+
+        # Set window icon
+        self.setWindowIcon(QtGui.QIcon(os.path.join(gui_path, 'GUI/icon.png')))
         
         # Timer used to update certain values with a fixed interval (Timer starts after connecting)
         self.update_timer = QtCore.QTimer()
