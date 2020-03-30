@@ -62,6 +62,21 @@ included in the FROG software via the Pymba package, a python wrapper for Vimba.
   External trigger (TTL) has to be at least 6 microseconds long with an amplitude of min. 2V.
   More information on triggering the camera is found in the Manta Tech Manual from page 193 on.
 
+#### Start the program
+
+The software is started with 
+
+```bash
+python Examples/start_gui.py
+```
+
+A testing mode can be used by
+
+```bash
+python Examples/start_gui.py test
+```
+
+In this case virtual devices are used and no connection to real devices is required.
 
 ### Contact ###
 

@@ -10,3 +10,5 @@
 
 
 - install a save as seed option
+- Add ptychographic algorithm as option
+- Create input for the center wavelength
