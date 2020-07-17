@@ -29,54 +29,25 @@ import time
 
 import pymba
 
-cur_dir = os.path.abspath(os.path.dirname(__file__))
-config_dir = os.path.join(cur_dir, "..","..","Examples","config/")
-config_file = "config.yml"
-
 class CCDcamera:
-
-    # These are defaults for the Allied Vision Manta Camera G-235B NIR
-    # when using a different camera, please provide a config file with
-    # the correct defaults.
-    DEFAULTS = {'camera model': 'Manta G-234B NIR',
-                'camera id': 'DEV_000F314E1E59', # necessary to select the camera
-                'pixel size':     5.86, # micron
-                'pxls height': 1216,    # pixel in vertical
-                'pxls width': 1936,    # pixel in horizontal
-    }
         
     camera = None
     
     def __init__(self, camera_id='DEV_000F314E1E59'):
-        
-        self.camera_id=camera_id
+
+        # Start the camera package
         self.vimba = pymba.Vimba()
         self.vimba.startup()
+        
         # Find cameras
         camera_ids = self.vimba.camera_ids()
         print ("Available cameras : %s" % (camera_ids))
-        # Select camera by id
+        # Find correct camera index
+        self.camera_id = camera_id
         for i in range(len(camera_ids)) :
-            if self.camera_id == camera_ids[i] :
+            if self.camera_id == camera_ids[i]:
                 self.camera_index = i
-                break
-
-        # Loading camera basic settings
-        path = config_dir + config_file
-        # Check if config file is present
-        if not os.path.exists(path):
-            with open(path, 'w') as f:
-                f.write(yaml.dump(self.DEFAULTS, default_flow_style=False))
-                print(f"Config file {config_file} was missing and has been created.")
-        else:
-            # Load config file
-            with open(path,'r') as f:
-                self.DEFAULTS = yaml.load(f,Loader=yaml.FullLoader)
-            model = self.DEFAULTS['camera model']
-            print(f"Loaded config file {config_file} for Allied Vision camera {model}.")
-        # And settings:
-        #not yet implemented
-        
+                break        
 
     def initialize(self):
         """Establish connection to camera"""
@@ -181,7 +152,7 @@ class CCDcamera:
         return image
 
     
-    def trigMode(self,mode=None):
+    def trigMode(self, mode=None):
         """Toggle Trigger Mode set by 1/0, respectively.
         Keyword Arguments:
             mode {int} -- possible values: 0, 1
@@ -189,14 +160,14 @@ class CCDcamera:
             int -- 0 or 1, depending on trigger mode off or on
         """
         if mode==None:
-            onoff = {'Off':0,'On':1}
+            onoff = {'Off': 0, 'On': 1}
             mode = self.camera.TriggerMode
             return onoff[mode]
         else:
-            onoff = ['Off','On']
+            onoff = ['Off', 'On']
             self.camera.TriggerMode = onoff[mode]
 
-    def trigSource(self,source=None):
+    def trigSource(self, source=None):
         """Get/Select trigger source keyword arguments:
             source {str} -- Source can be one of the following strings:
                             'Freerun', 'Line1', 'Line2', 'FixedRate', 'Software'
@@ -210,7 +181,7 @@ class CCDcamera:
             self.camera.TriggerSource = source
 
 
-    def pixFormat(self,pix=None):
+    def pixFormat(self, pix=None):
         """Get/Select pixel format
         Keyword Arguments:
             pix {str} -- possible values: 'Mono8','Mono12','Mono12Packed' 
