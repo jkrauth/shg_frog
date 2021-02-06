@@ -1,9 +1,9 @@
 """
 Module that implements the phase retrieval algorithm used by the FROG software
 
-The realization of this GP (general projections) phase retrieval algorithm 
-in here is based on the Matlab code from Steven Byrnes who wrote an extension 
-of Adam Wyatt's MATLAB FROG program. Various features include anti-aliasing 
+The realization of this GP (general projections) phase retrieval algorithm
+in here is based on the Matlab code from Steven Byrnes who wrote an extension
+of Adam Wyatt's MATLAB FROG program. Various features include anti-aliasing
 algorithm.
 
 Copyright (c) 2012, Steven Byrnes
@@ -23,10 +23,10 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-File name: PHASE_RETRIEVAL.py
+File name: phase_retrieval.py
 Author: Julian Krauth
 Date created: 2019/11/27
-Python Version: 3.7  
+Python Version: 3.7
 """
 
 
@@ -42,24 +42,25 @@ import pyqtgraph as pg
 class PhaseRetrieval:
     """
     This class has two main methods:
-    1. prepFROG(): Preparing the measured FROG trace 
+    1. prepFROG(): Preparing the measured FROG trace
        to be used for the phase retrieval
-    2. retrievePhase(): Uses the prepared FROG trace and retrieves 
+    2. retrievePhase(): Uses the prepared FROG trace and retrieves
        the pulse shape in time and frequency domain.
 
-    The retrievePhase() method uses two additional methods for 
+    The retrievePhase() method uses two additional methods for
     the algorithm:
     - makeFROG()
     - guessPusle()
     """
-    def __init__(self,
-                 iterMAX=100,
-                 N=128,
-                 GTol=0.0,
-                 folder='out_test/',
-                 fm_name='frog_meas'):
+    def __init__(
+        self,
+        iterMAX=100,
+        N=128,
+        GTol=0.0,
+        folder='out_test/',
+        fm_name='frog_meas'):
 
-        # Names and type of FROG trace files 
+        # Names and type of FROG trace files
         self.ftype = '.tiff' # Use tiff, because of 16bit capabilities
         self.fm_name = folder + fm_name # Original measured trace
         self.fp_name = folder + 'frog_prep' # Preparated trace
@@ -75,31 +76,31 @@ class PhaseRetrieval:
         # Difference in delay between consecutive pixels
         # of the starting image
         self.ccddt = 0.002
-    
+
         # Difference in frequency between consecutive pixels
         # of the starting image
         self.ccddv = 0.2
 
 
         ### Parameters used by phaseRetrieve ###
-        
+
         # Difference in time-delay (dt) between consecutive pixels. This
         # automatically fixes frequency units, too. Doesn't affect algorithm,
         # only plots and such. This value will be updated by prepFROG
         self.dtperpx = 0.0308
         # Frequency interval per pixel, given by self.dtperpx
-        #self.dvperpx = 1 / (self.N*self.dtperpx) 
-        
+        #self.dvperpx = 1 / (self.N*self.dtperpx)
+
         # Cell-array: units[0] is units of dtperpx, units[1] is units[0]^-1,
         # the units of frequency.
         self.units = ['ps','THz']
 
-        
+
         ### FROG traces ###
         # Measured trace
         self.Fccd = None
         # Preparated trace, created by self.setPrepFrogTrace()
-        self.Fm = np.zeros((self.N,self.N)).astype(np.float64) 
+        self.Fm = np.zeros((self.N,self.N)).astype(np.float64)
         # Reconstructed trace, created by self.retrievePhase()
         self.Fr = None
 
@@ -119,14 +120,14 @@ class PhaseRetrieval:
         # method[1]: makeFROGantialias   # 1 = antialias
         # method[2]: guessPulsedomain    # not used
         # method[3]: guessPulseantialias # not used
-    
+
         # G=RMS difference in entries of Fm and alpha*Fr
         # (where Fm is normalized so max(Fm)=1 and alpha is whatever
         # value minimizes G.) See DeLong1996
 
     def setN(self,val):
         self.N = val
-        
+
     def setIterMax(self,val):
         self.iterMAX = val
 
@@ -144,23 +145,23 @@ class PhaseRetrieval:
         # RMS difference in the entries of two real matrices/vectors.
         rmsdiff = np.sqrt(np.mean(np.square(F1-F2)))
         return rmsdiff
-    
+
     def normalizemax1(self,M):
         # Normalize a matrix or vector for its maximum to be 1.
         # Must have real nonnegative entries.
         normalizemax1 = M/np.amax(M)
         return normalizemax1
-    
+
     def calcalpha(self,Fm,Fr):
         # Calculates alpha, the positive number that minimizes
         # rmsdiff(Fm,alpha*Fr). See DeLong1996
         calcalpha = np.sum(Fm*Fr)/np.sum(np.square(Fr))
         return calcalpha
-    
+
     def parity(self,x):
         # 1 for odd, 0 for even. Don't delete! It looks like it's not used
         # in the program, but it can be called by the 'method' strings.
-        parity = int(x-2*np.floor(x/2.)) 
+        parity = int(x-2*np.floor(x/2.))
         return parity
 
 
@@ -169,7 +170,7 @@ class PhaseRetrieval:
         """
         Function has input 0 or 1:
         0: Seed will be a random Gaussian
-        1: Seed will be read from file. 
+        1: Seed will be read from file.
            Number of data points has to equal prepFROG size N,
            which is usually N = 128
         """
@@ -186,25 +187,26 @@ class PhaseRetrieval:
 
 
 
-    def prepFROG(self,
-                 ccddt=None,
-                 ccddv=None,
-                 N=None,
-                 ccdimg=None,
-                 showprogress=0,
-                 showautocor=0,
-                 flip=2):
+    def prepFROG(
+        self,
+        ccddt=None,
+        ccddv=None,
+        N=None,
+        ccdimg=None,
+        showprogress=0,
+        showautocor=0,
+        flip=2):
         """
-        prepFROG: Cleans, smooths, and downsamples data in preparation for 
+        prepFROG: Cleans, smooths, and downsamples data in preparation for
         running the FROG algorithm on it.
         The following attributes have to be set before using this method:
         self.ccddt
         self.ccddv
         self.N
         """
-        #if ccddt==None: ccddt = self.ccddt
-        #if ccddv==None: ccddv = self.ccddv
-        if N==None: N = self.N
+        #if ccddt is None: ccddt = self.ccddt
+        #if ccddv is None: ccddv = self.ccddv
+        if N is None: N = self.N
         if ccdimg is None:
             if False:
             # if self.Fccd is not None:
@@ -224,7 +226,7 @@ class PhaseRetrieval:
                     ccdimg = ccdimg[:,:,0]
                 ccdimg = np.asarray(ccdimg,dtype=np.float64)
                 # Set also value of attribute
-                #self.Fccd = ccdimg 
+                #self.Fccd = ccdimg
                 #self.ccddt = ccddt
                 #self.ccddv = ccddv
 
@@ -233,7 +235,7 @@ class PhaseRetrieval:
         # for the FROG algorithm, but ccddt and ccddv are NOT themselves
         # important. They are only used for graph labels.
         ccddtdv = ccddt * ccddv
-    
+
         # Choose correct image orientation
         if flip==1 or flip==3:
             ccdimg = np.transpose(ccdimg)
@@ -248,22 +250,22 @@ class PhaseRetrieval:
         centercol = np.inner(np.arange(1,ccdsizet+1),colsums) / np.sum(colsums)
         rowsums = np.sum(ccdimg,1)
         centerrow = np.inner(np.arange(1,ccdsizev+1),rowsums) / np.sum(rowsums)
-    
-    
+
+
         # Find the (very) approximate width of the spot in each dimension
         spotwidth = (2*np.inner(np.abs(np.arange(1,ccdsizet+1)-centercol),colsums)
                      / np.sum(colsums))
         spotheight = (2*np.inner(np.abs(np.arange(1,ccdsizev+1)-centerrow),rowsums)
                       / np.sum(rowsums))
-    
-    
+
+
         # Large "aspectratio" means vertical-stripe original image. Can also
         # input this or modify it by hand depending on what works best. This
         # is relevant because the final image will scale the dimensions to
         # make the final image aspect ratio roughly 1. (This helps accuracy).
         aspectratio=spotheight/spotwidth
-    
-    
+
+
         # vpxpersample and tpxpersample are the separation between consecutive
         # "samples" to be fed into the FROG algorithm. There are N*N=N^2
         # "samples" total, each is a pixel taken from the CCD image. They
@@ -277,17 +279,17 @@ class PhaseRetrieval:
         #if showprogress:
         print('Vertical pixels per freq (v) sample: %.3f' % vpxpersample)
         print('Horizontal pixels per delay (t) sample: %.3f' % tpxpersample)
-    
+
         # For me these are around 5 pixels.
-    
-    
+
+
         ################# IMAGE FILTERING #################
         if showprogress:
             plt.figure('prepFROG',figsize=(7,6))
             plt.subplot(221)
             plt.imshow(ccdimg)
             plt.title('(1) Original')
-    
+
         #### LOW-PASS FOURIER FILTERING ####
         # See Taft and DeLong, chapter 10 in FROG textbook
         rho=0.3 # Lower rho means more extreme filtering. Make sure image looks OK.
@@ -300,14 +302,14 @@ class PhaseRetrieval:
                         np.square((ii+1)-ccdsizev/2.)+np.square((jj+1)-ccdsizet/2.))
                    <maxtimesrho):
                     tophatfilter[ii,jj]=1
-    
+
         ccdimgfft = tophatfilter * ccdimgfft
         ccdimg = abs(np.fft.ifft2(np.fft.ifftshift(ccdimgfft)))
         if showprogress:
             plt.subplot(222)
             plt.imshow(ccdimg)
             plt.title('(2) After Fourier filter')
-    
+
         #### BACKGROUND SUBTRACTION ####
         # The lowest-average-intensity 8x8 block of pixels is assumed to be the
         # background and is subtracted off
@@ -317,23 +319,23 @@ class PhaseRetrieval:
             for jj in range(8):
                 ccdimg_rollvt = np.roll(ccdimg_rollv,(jj+1),axis=1)
                 imgblocks = imgblocks + ccdimg_rollvt
-    
+
         background = np.amin(imgblocks)/(8.*8.)
-    
+
         ccdimg = ccdimg - background
         ccdimg[ccdimg<0]=0 # Negative values are set to zero
         if showprogress:
             plt.subplot(223)
             plt.imshow(ccdimg)
             plt.title('(3) After background subtraction')
-    
+
         #### DOWNSAMPLING TO NxN ####
         # Want an NxN pixel image to process. Go through each pixel of the
         # original, and have it contribute to the nearest pixel of the final
         # (in an average).
         if(np.shape(ccdimg)==(N,N) and ccddt * ccddv == 1./float(N)):
             # Skip downsampling if ccdimg is already sampled correctly.
-            fnlimg = ccdimg  
+            fnlimg = ccdimg
             fnldt = ccddt
         else:
             fnlimg = np.zeros((N,N))
@@ -357,7 +359,7 @@ class PhaseRetrieval:
                                             # Pixels that haven't been written
                                             # into should be set to zero, and
                                             # they are.
-    
+
             fnlimg = fnlimg/fnlimgcount
             fnldt = ccddt * tpxpersample
 
@@ -365,14 +367,14 @@ class PhaseRetrieval:
         #### Save results in corresponding attributes ####
         self.dtperpx = fnldt # set freq interval per pixel.
         self.Fm = fnlimg # set prep. Frog image for phase retrieval.
-        
+
         if showprogress:
             plt.subplot(224)
             plt.imshow(fnlimg)
             plt.title('(4) After downsampling to %dx%d' % (N,N))
             plt.subplots_adjust(left=0.06,bottom=0.06,right=0.94,top=0.94,
                                     wspace=0.1,hspace=0.3)
-    
+
         if showautocor:
             plt.figure('Autocorrelation',figsize=(6,4))
             plt.plot(np.arange(-ccdsizet/2.*ccddt,ccdsizet/2.*ccddt,ccddt),
@@ -380,7 +382,7 @@ class PhaseRetrieval:
             plt.title('Autocorrelation')
             plt.xlabel('Delay')
             plt.ylim((0,1.05*max(np.sum(ccdimg,0))))
-    
+
         if showprogress or showautocor:
             plt.show()
 
@@ -388,7 +390,7 @@ class PhaseRetrieval:
             fnlimg = fnlimg * 65536 / np.amax(fnlimg)
             #print np.amax(fnlimg)
             fnlimg = np.asarray(fnlimg,dtype=np.uint16)
-            imageio.imsave(self.fp_name+self.ftype,fnlimg)            
+            imageio.imsave(self.fp_name+self.ftype,fnlimg)
 
 
 
@@ -400,10 +402,11 @@ class PhaseRetrieval:
 
 
 
-    def makeFROG(self,
-                 Pt,
-                 domain=0,
-                 antialias=0):
+    def makeFROG(
+        self,
+        Pt,
+        domain=0,
+        antialias=0):
         """
         makeFROG: Reads in the (complex) electric field as a function of time,
         and computes the expected SHG-FROG trace.
@@ -427,7 +430,7 @@ class PhaseRetrieval:
     	        symmetric when sign of delay is flipped.
                 """
                 EF = EF - np.tril(EF,-np.ceil(N/2.)) - np.triu(EF,np.ceil(N/2.))
-    
+
             for n in range(0,N):
                 # Row rotation...Eqs.(10)-->(11) of Kane1999
                 EF[n,:] = np.roll(EF[n,:],-n)
@@ -442,7 +445,7 @@ class PhaseRetrieval:
 	        # FFT each column and put 0 frequency in the correct place:
             EF = np.roll(np.fft.fft(EF,None,axis=0),int(np.ceil(N/2.)-1),0)
 
-        
+
             # Generate FROG trace (= |field|^2)
             F = np.square(np.absolute(EF))
 
@@ -454,7 +457,7 @@ class PhaseRetrieval:
 	        # integral[P(w') * P(w-w')e^(-iw'tau)dw']. We follow Kane1999,
             # but starting in frequency-frequency space rather than
             # delay-delay space.
-            PtFFT=np.fft.fft(Pt,axis=0)
+            PtFFT = np.fft.fft(Pt,axis=0)
             #EF = PtFFT*np.transpose(PtFFT)
             EF = np.outer(PtFFT,PtFFT)
 
@@ -473,13 +476,13 @@ class PhaseRetrieval:
 	            # That's consistent with the convention above for the FROG trace,
 	            # that places zero frequency in such a way that more positive
 	            # frequencies are visible than negative frequencies for even N.
-	            vmax = int(np.floor(N/2.)) # Which index in EF uses
+                vmax = int(np.floor(N/2.)) # Which index in EF uses
                                            # the max positive freq?
-	            vmin = vmax+1 # Which index in EF uses the most negative freq?
-	            for n in range(1,vmax+1):
-	                EF[n,vmax-(n-1):vmax+1] = 0
-	            for n in range(vmin,N):
-		            EF[n,vmin:vmin+(N-n)] = 0
+                vmin = vmax+1 # Which index in EF uses the most negative freq?
+                for n in range(1,vmax+1):
+                    EF[n,vmax-(n-1):vmax+1] = 0
+                for n in range(vmin,N):
+                    EF[n,vmin:vmin+(N-n)] = 0
 
             EF = np.fliplr(EF)
 
@@ -492,7 +495,7 @@ class PhaseRetrieval:
 	        # Right now the columns are in the order N*v=(N-1,N-2,...,1,0), and rows
 	        # are in the order tau=0,-1,...,1. (These are all mod N.)
             EF = np.flipud(np.fliplr(EF))
-	        # Now columns are N*v=(0,1,2,...-1) and rows are tau=1,2,3,...,0.	
+	        # Now columns are N*v=(0,1,2,...-1) and rows are tau=1,2,3,...,0.
             EF = np.roll(EF,int(np.ceil(N/2.)),0)
             EF = np.roll(EF,int(np.ceil(N/2.)-1),1)
 
@@ -506,24 +509,25 @@ class PhaseRetrieval:
             return F, EF
 
         """ End makeFROG method """
-        
 
 
 
-    def guessPulse(self,
-                   EF,
-                   lastPt,
-                   domain=0,
-                   antialias=0,
-                   PowerOrSVD=0):
+
+    def guessPulse(
+        self,
+        EF,
+        lastPt,
+        domain=0,
+        antialias=0,
+        PowerOrSVD=0):
         """
         guesspulse: Extracts the pulse as a function of time, starting with a FROG
         FIELD (i.e. complex amplitude), and the previous best-guess pulse. Uses
         either "power method" from Kane1999 or SVD method from Kane1998.
         """
-        
+
         N = len(EF[0])
-        
+
 
         if domain==0:
             # Do the exact inverse of the procedure in makeFROG...
@@ -548,7 +552,7 @@ class PhaseRetrieval:
             if PowerOrSVD==0: # Power method
                 #lastPt = np.transpose(lastPt) # Make column array
                 Pt = np.dot(EF,np.dot(np.conjugate(np.transpose(EF)),lastPt))
-                #Pt = np.transpose(Pt) # Change to row array again            
+                #Pt = np.transpose(Pt) # Change to row array again
             else:             # SVD method (does not work???)
                 U, S, V = np.linalg.svd(EF)
                 Pt = U[:,0]
@@ -601,7 +605,7 @@ class PhaseRetrieval:
                 U, S, V = np.linalg.svd(EF)
                 Pt = np.fft.ifft(U[:,0])
                 Pt = Pt.reshape(N,1)
-                
+
             Pt = Pt / np.linalg.norm(Pt)  # Normalize to Euclidean norm 1
 
             return Pt
@@ -612,8 +616,8 @@ class PhaseRetrieval:
 
 
 
-        
-        
+
+
     def retrievePhase(self,
                       Fm=None,   # Prep. Frog trace
                       seed=None,    # Is usually given by a random func
@@ -652,13 +656,13 @@ class PhaseRetrieval:
         if dtperpx==None: dtperpx = self.dtperpx
 
         # Frequency interval per pixel
-        dvperpx = 1 / (N*dtperpx) 
-        
+        dvperpx = 1 / (N*dtperpx)
+
         if units==None:
             dtunit = self.units[0]
             dvunit = self.units[1]
 
-        
+
         # x-axis labels for plots
         tpxls = np.arange(-dtperpx*(N-1)/2.,dtperpx*N/2.,dtperpx)
         # y-axis labels for plots
@@ -667,15 +671,15 @@ class PhaseRetrieval:
         # Emit axis scale information
         if signal_axis!=None:
             signal_axis.emit(tpxls,vpxls)
-        
+
         # Maybe you only want to display part of the plot range, to zoom in
         # on the interesting stuff. If so, edit the following lines...
         tplotrange = [np.min(tpxls),np.max(tpxls)]
         vplotrange = [np.min(vpxls),np.max(vpxls)]
-        
-        
+
+
         # User defined seed?
-        if(np.all(seed)==None):
+        if np.all(seed) is None:
             # Generate initial guess of gate and pulse from noise times
             # a gaussian envelope function. Don't use complex phase 0 or
             # it gets stuck in real numbers, but don't let the complex
@@ -696,15 +700,15 @@ class PhaseRetrieval:
 
         # Generate FROG trace
         iteration = 0
-        
+
         makeFROGdomain = method[0]
         makeFROGantialias = method[1]
         #guesspulsedomain=method[2] # not used
         #guesspulseantialias=method[3] # not used
-            
+
         # EFr is reconstructed FROG trace complex amplitudes ( Fr=|EFr|^2 )
         Fr, EFr = self.makeFROG(Pt,makeFROGdomain,makeFROGantialias)
-    
+
         # Calculate FROG error G, see DeLong1996
         Fr = Fr * self.calcalpha(Fm,Fr) #scale Fr to best match Fm, see DeLong1996
         G = self.rmsdiff(Fm,Fr)
@@ -720,27 +724,27 @@ class PhaseRetrieval:
             #win.resize(800,500)
             win.setWindowTitle('Phase Retrieval - SHG FROG')
             #win.show()
-        
+
             p1 = win.addPlot(title='Orig. FROG trace')
             img1 = pg.ImageItem()
             p1.addItem(img1)
             img1.setImage(Fm)
             p1.setLabel('bottom','Delay [%s]' % dtunit)
             p1.setLabel('left','SH freq [%s]' % dvunit)
-        
+
             p2 = win.addPlot()
             img2 = pg.ImageItem()
             p2.addItem(img2)
             p2.setLabel('bottom','Delay [%s]' % dtunit)
             p2.setLabel('left','SH freq [%s]' % dvunit)
-            
+
             win.nextRow()
             p3 = win.addPlot(colspan=2)
             p3.setLabel('bottom','Time [%s]' % dtunit)
             p3.setLabel('left','|E|^2 & ang(E)')
             p3p = p3.plot(tpxls,np.zeros(N),pen=(255,0,0))
             p3p2= p3.plot(tpxls,np.zeros(N),pen=(0,255,0))
-        
+
             win.nextRow()
             p4 = win.addPlot(colspan=2)
             p4.setLabel('bottom','Frequency [%s]' % dvunit)
@@ -758,14 +762,14 @@ class PhaseRetrieval:
             iteration += 1
             if mov==2:
                 print(f"Iteration number: {iteration} Error: {G}")
-        
+
             # Check method to use. Have to run this inside the loop because method
             # may vary depending on iter.
             makeFROGdomain = method[0]
             makeFROGantialias=method[1]
             guesspulsedomain=method[2]
             guesspulseantialias=method[3]
-                
+
             # Update best-guess EFr: Phase from last makeFROG, amplitudes from Fm.
             # Change absolute values of EFr to match Fm (keep phase the same)
             # and avoid dividing by zero.
@@ -773,10 +777,10 @@ class PhaseRetrieval:
                                           out=np.zeros_like(Fm), where=Fr!=0))
             # Extract pulse field from FROG complex amplitude
             #testPt = Pt
-    
+
 
             Pt = self.guessPulse(EFr,Pt,guesspulsedomain,guesspulseantialias)
-            
+
             ### Keep peak centered... not necessary, but this helps when visually
             ### comparing and understanding reconstructions.
             if True:
@@ -785,10 +789,10 @@ class PhaseRetrieval:
                                       * np.absolute(np.power(Pt,4)))
                                /np.sum(np.absolute(np.power(Pt,4))))
                 Pt = np.roll(Pt,-int(np.round(centerindex-N/2.)))
-    
+
             # Make a FROG trace from new fields
             Fr, EFr = self.makeFROG(Pt,makeFROGdomain,makeFROGantialias)
-    
+
             # Calculate FROG error G, see DeLong1996
             # Scale Fr to best match Fm, see DeLong1996
             Fr = Fr * self.calcalpha(Fm,Fr)
@@ -797,7 +801,7 @@ class PhaseRetrieval:
             print(f"Iter. {iteration}: FROG Error {G}")
 
 
-            
+
             # Create plotting data
             # time domain
             tPt_data = (2*np.pi*np.square(np.absolute(Pt[:,0]))
@@ -822,7 +826,7 @@ class PhaseRetrieval:
                 p3p2.setData(tpxls,tPt_angle)
                 p4p.setData(vpxls,vPt_data)
                 p4p2.setData(vpxls,vPt_angle)
-                
+
                 pg.QtGui.QApplication.processEvents()
                 #time.sleep(.1)
 
@@ -832,38 +836,38 @@ class PhaseRetrieval:
         #  ------------------------------------------------------------
 
         # Save the complex electric field for test purpose
-        #np.savetxt('seed/seed_new.input', np.column_stack([Pt.real, Pt.imag])) 
+        #np.savetxt('seed/seed_new.input', np.column_stack([Pt.real, Pt.imag]))
 
 
         self.Fr = Fr
 
-        
+
         if __name__ == '__main__':
             import sys
             if (sys.flags.interactive != 1) or not hasattr(QtCore, 'PYQT_VERSION'):
                 QtGui.QApplication.instance().exec_()
-        
-        """ End phaseRetrieve method """     
-        
-        
+
+        """ End phaseRetrieve method """
+
+
 if __name__ == '__main__':
 
 
-    
+
 
     # make Phase retrieval instance
     pr = PhaseRetrieval(folder='out_test/')
 
     #pg.setConfigOptions(imageAxisOrder='row-major')
     #pg.mkQApp()
-    #win = pg.GraphicsWindow()    
+    #win = pg.GraphicsWindow()
     #p1 = win.addPlot(title='Orig. FROG trace')
     #img1 = pg.ImageItem()
     #p1.addItem(img1)
     ##img1.setImage(Fm)
     #p1.setLabel('bottom','Delay [%s]' % pr.units[0])
     #p1.setLabel('left','SH freq [%s]' % pr.units[1])
-    #    
+    #
     #p2 = win.addPlot()
     #img2 = pg.ImageItem()
     #p2.addItem(img2)
@@ -884,12 +888,10 @@ if __name__ == '__main__':
     ##p4p = p4.plot(vpxls,np.zeros(N),pen=(255,0,0))
     ##p4p2= p4.plot(vpxls,np.zeros(N),pen=(0,255,0))
     #win.show()
-    
+
     pr.prepFROG(showprogress=1,showautocor=1)
     pr.retrievePhase(mov=1)
-    
+
     #im = plt.imshow(pr.Fm,cmap='hot')
     #plt.colorbar(im, orientation='horizontal')
     #plt.show()
-
-    

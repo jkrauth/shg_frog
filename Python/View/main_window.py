@@ -9,14 +9,11 @@ Author: Julian Krauth
 Date created: 2019/12/02
 Python Version: 3.7
 """
-
-
 import sys
 import os
 import yaml
 import numpy as np
 import imageio
-from matplotlib import cm # For colormaps
 
 from PyQt5 import QtWidgets, uic, QtCore, QtGui
 from pyqtgraph.parametertree import Parameter, ParameterTree
@@ -30,13 +27,13 @@ import general_worker
 from roi_window import ROIGraphics
 from retrieval_window import RetrievalGraphics
 
-class MainWindow(QtWidgets.QMainWindow):
+class MainWindow(QtWidgets. QMainWindow):
     """This is the main window of the GUI for the FROG interface.
     The window is designed with Qt Designer and loaded into this class.
     """
 
     DEFAULTS = {
-        'dev': { 
+        'dev': {
             0: 'ALLIED VISION CCD',
             1: 'ANDO Spectrometer',
         },
@@ -76,7 +73,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Set window icon
         self.setWindowIcon(QtGui.QIcon(os.path.join(gui_path, 'GUI/icon.png')))
-        
+
         # Timer used to update certain values with a fixed interval (Timer starts after connecting)
         self.update_timer = QtCore.QTimer()
         self.update_timer.setInterval(500) # 1000ms = 1s
@@ -111,7 +108,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.plot_class = FrogGraphics()
         self.graphics_widget = self.plot_class.gw
         self.gridLayout_2.addWidget(self.graphics_widget,1,0,1,3)
- 
+
         # Create instance for region of interest (ROI) window
         # This window will be opened and closed by the class' methods
         self.win_roi = ROIGraphics()
@@ -139,7 +136,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.btn_connect.setStyleSheet(f"background-color:{col[checked]}")
         self.btn_measure.setEnabled(checked)
         # Open device and respective branch of parameter tree
-        if checked:            
+        if checked:
             self.frog.initialize(index)
             self.par.param(dev[index]).show()
             self.par.param('Newport Stage').show()
@@ -151,7 +148,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.par.param('Newport Stage').hide()
         # needed for updating par tree in GUI
         self.parTree.setParameters(self.par, showTop=False)
-       
+
 
     def tree_stage_actions(self):
         stage_par = self.par.param('Newport Stage')
@@ -179,7 +176,7 @@ class MainWindow(QtWidgets.QMainWindow):
         cw_par = spect_par.child('CW mode')
         cw_par.sigValueChanged.connect(lambda param,val:self.frog.spect.cwMode(val))
         holdtime_par = spect_par.child('Rep. time')
-        holdtime_par.sigValueChanged.connect(lambda param,val:self.frog.spect.peakHoldMode(val))            
+        holdtime_par.sigValueChanged.connect(lambda param,val:self.frog.spect.peakHoldMode(val))
 
     def crop_action(self, param, changes):
         """Define what happens when changing the crop/roi parameters in the parameter tree"""
@@ -189,7 +186,7 @@ class MainWindow(QtWidgets.QMainWindow):
             if change=='value':
                 self.frog.spect.imgFormat(**{dictio[param.name()]:data})
                 #print dict[param.name()], data
- 
+
     def roi_action(self):
         """Defines the actions when calling the ROI button"""
         # Create ROI window with a full image taken by the camera
@@ -210,7 +207,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def measure_action(self, checked):
         btn = self.DEFAULTS['btn_measure']
         self.btn_measure.setText(btn[checked])
-        if checked: 
+        if checked:
             self.progress.setValue(0)
             self.frog.stop_measure = False
             # Do actual measurement loop (in separate thread)
@@ -219,7 +216,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.frog.stop_measure = True
 
     def start_measure(self):
-        """Retrieves measurement settings and wraps the measure function 
+        """Retrieves measurement settings and wraps the measure function
         into a thread. Then the signals are implemented."""
         # Get settings
         start_pos = self.par.param('Newport Stage').child('Start Position').value()
@@ -268,20 +265,20 @@ class MainWindow(QtWidgets.QMainWindow):
             # Save matrix as image with numbered filename
             imageio.imsave(save_path.format(file_num) + filetype, \
                         self.frog.measured_trace.astype(bit_type))
-            # Save settings               
+            # Save settings
             # Get settings from frog instance
             settings = self.frog.used_settings
             # Add additional information
             settings['measurement number'] = file_num
             settings['center position'] = self.par.param('Newport Stage').child('Offset').value()
-            # maybe add possibility to add a comment: settings['comment'] = 
-            # Create yaml settings file to the measurement, with numbered name 
+            # maybe add possibility to add a comment: settings['comment'] =
+            # Create yaml settings file to the measurement, with numbered name
             with open('%s.yml' % (save_path.format(file_num)), 'w') as f:
                 f.write(yaml.dump(settings, default_flow_style=False))
             print('Measurement and settings saved!')
         else:
             print('Do measurement first!')
-        
+
 
     def update_values(self):
         """Used for values which are continuously updated using QTimer"""
@@ -292,7 +289,7 @@ class MainWindow(QtWidgets.QMainWindow):
        """For changing the progress bar, using an iteration value"""
        max_val = self.par.param('Newport Stage').child('Number of steps').value()
        val = int(100*(float(iter_val)/float(max_val)))
-       self.progress.setValue(val)    
+       self.progress.setValue(val)
 
     def phase_action(self):
         # Open retrieval window
@@ -353,7 +350,7 @@ class FrogParams:
             {'name':'ALLIED VISION CCD','type':'group','visible':False,
              'children': [
                  {'name':'Exposure', 'type': 'float', 'value': 0.036, 'dec': True, 'step': 1, 'siPrefix': True, 'suffix': 's'},
-                 {'name':'Gain', 'type': 'float', 'value': 0, 'dec': False, 'step': 1},                 
+                 {'name':'Gain', 'type': 'float', 'value': 0, 'dec': False, 'step': 1},
                  {'name':'Crop Image', 'type': 'group', 'expanded':False,
                   'children': [
                      {'name':'Width','type':'int',
@@ -392,12 +389,12 @@ class FrogParams:
                   'value': 128}
              ]}
         ]
-        
+
         # Create parameter objects
         self.par = Parameter.create(name='params',
                               type='group',
                               children=params)
-        
+
         ### Some settings regarding CCD parameters ###
         # Create limits for crop settings
         crop_par = self.par.param('ALLIED VISION CCD').child('Crop Image')
@@ -412,13 +409,13 @@ class FrogParams:
         xpos_par.setLimits([0,maxW-width_par.value()])
         ypos_par.setLimits([0,maxH-height_par.value()])
         crop_par.sigTreeStateChanged.connect(self.setCropLimits)
-        
+
         ### Some settings regarding the Stage parameters ###
         stage_par = self.par.param('Newport Stage')
         start_par = stage_par.child('Start Position')
         step_par = stage_par.child('Step Size')
         off_par = stage_par.child('Offset')
-        
+
         # Set limits of Start Position, depending on offset
         start_par.setLimits([-off_par.value(),-0.2])
         off_par.sigValueChanged.connect(self.setStartPosLimits)
@@ -426,7 +423,7 @@ class FrogParams:
         # Set limits of Step Size, depending on Start Position
         step_par.setLimits([0.2,abs(start_par.value())])
         start_par.sigValueChanged.connect(self.setStepLimits)
-        
+
         # Always update number of steps, given by start pos and step size
         start_par.sigValueChanged.connect(self.showSteps)
         step_par.sigValueChanged.connect(self.showSteps)
@@ -469,9 +466,9 @@ class FrogParams:
         # and make sure that offset and size stays in allowed range
         maxSize = [self.DEFAULTS['maxW'], self.DEFAULTS['maxH']]
         for i in range(2):
-            if pos[i] < 0: 
+            if pos[i] < 0:
                 pos[i] = 0
-            if size[i] > maxSize[i]: 
+            if size[i] > maxSize[i]:
                 size[i] = maxSize[i]
                 pos[i] = 0
             if size[i]+pos[i] > maxSize[i]:
@@ -486,11 +483,11 @@ class FrogParams:
     def setStepLimits(self,param,val):
         step_par = self.par.param('Newport Stage').child('Step Size')
         step_par.setLimits([0.2,abs(val)])
-        
+
     def setStartPosLimits(self,param,val):
         start_pos = self.par.param('Newport Stage').child('Start Position')
         start_pos.setLimits([-val,-0.2])
-        
+
     def showPos(self,val):
         pos = self.par.param('Newport Stage').child('Position')
         pos.setValue(val)
@@ -506,7 +503,7 @@ class FrogParams:
     def printParChanges(self):
         # Do print changes in parametertree
         self.par.sigTreeStateChanged.connect(self._Change)
-        
+
     def _Change(self, param, changes):
         ## If anything changes in the parametertree, print a message
         for param, change, data in changes:
@@ -530,7 +527,7 @@ class FrogGraphics:
     """
     Class which implements the content for the graphics widget.
     It shows the recorded data and updates during measurement.
-    """ 
+    """
     def __init__(self):
 
         # Enable antialiasing for prettier plots
@@ -565,7 +562,7 @@ class FrogGraphics:
 if __name__ == "__main__":
 
     import sys
-    
+
 
     app = QtGui.QApplication([])
     win = MainWindow()

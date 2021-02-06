@@ -6,7 +6,6 @@ Author: Julian Krauth
 Date created: 2019/12/20
 Python Version: 3.7
 """
-
 import pyqtgraph as pg
 
 class ROIGraphics:
@@ -18,7 +17,6 @@ class ROIGraphics:
         # Image will be filled with an image from the CCD
         #self.image = []
 
-        
     def createWin(self):
         """
         Creates the window
@@ -44,7 +42,7 @@ class ROIGraphics:
         # Create ROI rectangle with arbitrary size, will later be updated
         self.roi = pg.RectROI([400, 470], [20, 10], pen=(0,9),
                               scaleSnap=True,translateSnap=True)
-        
+
         self.roi.sigRegionChanged.connect(self.update)
         self.v1a.addItem(self.roi)
 
@@ -53,17 +51,17 @@ class ROIGraphics:
         self.image = img
         self.img1a.setImage(self.image)
         self.v1a.autoRange()
-        
+
     def update_ROI_frame(self,x,y,dx,dy):
         """Change position and size of ROI, don't send changefinished signal."""
         self.roi.setPos([x, y],finish=False)
         self.roi.setSize([dx, dy],finish=False)
 
 
-    def update(self,roi):
+    def update(self, roi):
         """Update the second viewport which shows the selection / ROI"""
         self.img1b.setImage(self.roi.getArrayRegion(self.image, self.img1a),
                             levels=(0, self.image.max()))
         self.v1b.autoRange()
-  
+
     """ End ROIGraphics class """

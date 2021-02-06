@@ -6,15 +6,14 @@ An example of how to run the code is found at the end of this file.
 File name: frog.py
 Author: Julian Krauth
 Date created: 2019/12/02
-Python Version: 3.7                     
+Python Version: 3.7
 """
-
 import os
 import sys
-import time
+from time import sleep
+from datetime import datetime
 import numpy as np
 import yaml
-from datetime import datetime
 
 cur_dir = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(cur_dir)
@@ -26,7 +25,7 @@ from Controller import NEWPORT
 from Model import acquisition
 from Model import phase_retrieval
 
-speedoflight = 299792458. #m/s
+SPEEDOFLIGHT = 299792458. #m/s
 
 class FROG:
 
@@ -74,14 +73,14 @@ class FROG:
             # Record spectrum
             y = self.spect.get_spectrum()
             # Create 2d frog-array to fill with data
-            if i==0: 
+            if i==0:
                 frog_array = np.zeros((len(y),max_meas))
             # Stitch data together
             frog_array[:,i] = y
             # Send data to plot
             sig_measure.emit(3, y)
             sig_measure.emit(2, frog_array)
-            time.sleep(0.2)
+            sleep(0.2)
             sig_progress.emit(i+1)
             if self.stop_measure: break
         if self.stop_measure:
@@ -112,7 +111,7 @@ class FROG:
         date = datetime.now().strftime('%Y-%m-%d')
         time = datetime.now().strftime('%H:%M:%S')
         # Time step per pixel in ps
-        ccddt = 1e6*2*step_size/(speedoflight)
+        ccddt = 1e6*2*step_size/(SPEEDOFLIGHT)
         ccddv = self.freq_step_per_pixel()
         # in future maybe write also exposure time, gain, max Intensity, bit depth
         settings = {
@@ -147,7 +146,7 @@ class FROG:
                 /1000) # yields 34
             nm_per_px = self.DEFAULTS['grating']/pxls_per_mrad # yields 0.0237nm
             # Frequency step per pixel
-            vperpxGHz = speedoflight * (1/(wlatcenter) \
+            vperpxGHz = SPEEDOFLIGHT * (1/(wlatcenter) \
                 -1/(wlatcenter + nm_per_px)) # GHz
             vperpx = vperpxGHz * 1.e-3 # THz
             # Also here I assume that for small angles the frequency can be
@@ -165,7 +164,7 @@ class FROG:
             self.algo.prepFROG(ccddt=ccddt, ccddv=ccddv, N=pixels, ccdimg=self.measured_trace, flip=2)
             self.algo.retrievePhase(GTol=GTol, iterMAX=iterMAX, signal_data=sig_retdata, \
                 signal_label=sig_retlabels, signal_title=sig_rettitles, signal_axis=sig_retaxis)
-        else: 
+        else:
             raise Exception('No recorded trace in buffer!')
 
     def close(self):

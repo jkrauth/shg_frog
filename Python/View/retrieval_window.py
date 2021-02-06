@@ -6,7 +6,6 @@ Author: Julian Krauth
 Date created: 2020/01/17
 Python Version: 3.7
 """
-
 import pyqtgraph as pg
 
 class RetrievalGraphics:
@@ -15,7 +14,7 @@ class RetrievalGraphics:
     """
     def __init__(self):
         pass
-    
+
     def createWin(self):
         """
         Creates the window
@@ -26,7 +25,7 @@ class RetrievalGraphics:
         self.win.setGeometry(400,0,1000,1000)
         #self.win.move(300,0)
 
-        
+
         # Add item to show original trace
         self.p1 = self.win.addPlot(title='Orig. FROG trace')
         self.img1 = pg.ImageItem()
@@ -63,7 +62,7 @@ class RetrievalGraphics:
             self.img1.setLookupTable(lut)
             self.img2.setLookupTable(lut)
 
-        
+
     #@pyqtSlot(np.ndarray,np.ndarray)
     def setAxis(self,tpxls,vpxls):
         """
@@ -83,12 +82,12 @@ class RetrievalGraphics:
         self.p3p2= self.p3.plot(tpxls,np.zeros(N),pen=(0,255,0))
         self.p4p = self.p4.plot(vpxls,np.zeros(N),pen=(255,0,0))
         self.p4p2= self.p4.plot(vpxls,np.zeros(N),pen=(0,255,0))
-        
-        
+
+
     #@pyqtSlot(int,np.ndarray)
     def updateGraphics(self,which,data):
         """
-        Can only be used after window has been created and 
+        Can only be used after window has been created and
         axes set by method setAxis()
         """
         if which==0: # Set original FROG trace
@@ -103,19 +102,19 @@ class RetrievalGraphics:
             self.p4p.setData(self.vpxls,data)
         if which==5: # Set pulse time phase
             self.p4p2.setData(self.vpxls,data)
-        
+
 
     #@pyqtSlot(list)
     def updateLabels(self,units):
         dtunit = units[0]
         dvunit = units[1]
         self.p1.setLabel('bottom','Delay [%s]' % dtunit)
-        self.p1.setLabel('left','SH freq [%s]' % dvunit)        
+        self.p1.setLabel('left','SH freq [%s]' % dvunit)
         self.p2.setLabel('bottom','Delay [%s]' % dtunit)
         self.p2.setLabel('left','SH freq [%s]' % dvunit)
         self.p3.setLabel('bottom','Time [%s]' % dtunit)
         self.p4.setLabel('bottom','Frequency [%s]' % dvunit)
-        
+
     #@pyqtSlot(int,float)
     def updateTitle(self,iteration,G):
         self.p2.setTitle(title='Reconstructed: iter=%d G=%.4f'
@@ -125,5 +124,5 @@ class RetrievalGraphics:
         exporter = pg.exporters.ImageExporter(widget)
         #exporter.parameters()['widht'] = 100
         exporter.export('screenshot.png')
-        
+
     """ End RetrievalGraphics class """

@@ -9,7 +9,6 @@ Author: Julian Krauth
 Date created: 2019/12/08
 Python Version: 3.7
 """
-
 import os
 import sys
 import numpy as np
@@ -22,7 +21,7 @@ sys.path.append(python_dir)
 from Controller import ANDO_SPECTROMETER, ALLIED_VISION_CCD
 
 class Spectrometer:
-
+    """This class defines the model for the Spectrometer."""
     mode = None # Is set upon initialization
 
     def __init__(self, test=True):
@@ -34,6 +33,7 @@ class Spectrometer:
             self.camera = ALLIED_VISION_CCD.CCDcamera()
 
     def initialize(self, mode):
+        """Connect to the device."""
         if mode == 0:
             self.camera.initialize()
         elif mode == 1:
@@ -51,7 +51,7 @@ class Spectrometer:
         """Get spectrum from ccd camera"""
         img = self.camera.takeSingleImg()
         # Project image onto a single axis and normalize
-        y = np.divide(np.sum(img,0),float(np.ma.size(img,0)))
+        y = np.divide(np.sum(img,0), float(np.ma.size(img,0)))
         return y
 
     def get_spectrum(self):
@@ -62,6 +62,7 @@ class Spectrometer:
             return self.get_ando_spectrum()
 
     def close(self):
+        """Close connection to device."""
         if self.mode == 0:
             self.camera.close()
         elif self.mode == 1:
@@ -80,7 +81,7 @@ class Spectrometer:
             return self.camera.gain
         else:
             self.camera.gain = val
-            
+
     def imgFormat(self, offsetx=None, offsety=None,
                   width=None, height=None):
         """
@@ -91,20 +92,20 @@ class Spectrometer:
         Units in pixels!
         """
         if offsetx==offsety==width==height==None:
-           img_format = np.zeros(4,dtype=int)
-           img_format[0] = self.camera.roi_x
-           img_format[1] = self.camera.roi_y
-           img_format[2] = self.camera.roi_dx
-           img_format[3] = self.camera.roi_dy
-           return img_format
+            img_format = np.zeros(4,dtype=int)
+            img_format[0] = self.camera.roi_x
+            img_format[1] = self.camera.roi_y
+            img_format[2] = self.camera.roi_dx
+            img_format[3] = self.camera.roi_dy
+            return img_format
         else:
-            if offsetx!=None:
+            if offsetx is not None:
                 self.camera.roi_x = offsetx
-            if offsety!=None:
+            if offsety is not None:
                 self.camera.roi_y = offsety
-            if width!=None:
+            if width is not None:
                 self.camera.roi_dx = width
-            if height!=None:
+            if height is not None:
                 self.camera.roi_dy = height
 
     def trigSource(self, source=None):
@@ -128,7 +129,7 @@ class Spectrometer:
 
     def takeSingleImg(self):
         return self.camera.takeSingleImg()
-    
+
     def takeFullImg(self):
         """Saves current roi parameters, changes to full sensor size,
         takes full image, restores old roi parameters in the settings."""
