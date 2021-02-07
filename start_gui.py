@@ -16,7 +16,7 @@ import os
 from PyQt5.QtWidgets import QApplication
 
 CUR_DIR = os.path.abspath(os.path.dirname(__file__))
-PYTHON_DIR = os.path.join(CUR_DIR, "..", "Python")
+PYTHON_DIR = os.path.join(CUR_DIR, "Python")
 sys.path.append(PYTHON_DIR)
 
 from Model.frog import FROG
