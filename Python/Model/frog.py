@@ -15,20 +15,21 @@ from datetime import datetime
 import numpy as np
 import yaml
 
+from labdevices import newport
+
+
 cur_dir = os.path.abspath(os.path.dirname(__file__))
-sys.path.append(cur_dir)
 python_dir = os.path.join(cur_dir, "..", "..", "Python")
 sys.path.append(python_dir)
-config_dir = os.path.join(python_dir, "..", "Examples", "config")
+config_dir = os.path.join(python_dir, "..", "Config")
 
-from Controller import NEWPORT
 from Model import acquisition
 from Model import phase_retrieval
 
 SPEEDOFLIGHT = 299792458. #m/s
 
 class FROG:
-
+    """Top level class for the FROG experiment definition."""
     # Get defaults from config file
     with open(config_dir + '/config.yml','r') as f:
         CONFIG = yaml.load(f,Loader=yaml.FullLoader)
@@ -42,9 +43,9 @@ class FROG:
     def __init__(self, test=True):
         # Load the FROG devices (optional: virtual devices for testing)
         if test:
-            self.stage = NEWPORT.SMC100DUMMY(port='/dev/ttyUSB0', dev_number=1)
+            self.stage = newport.SMC100DUMMY(port='/dev/ttyUSB0', dev_number=1)
         else:
-            self.stage = NEWPORT.SMC100(port='/dev/ttyUSB0', dev_number=1)
+            self.stage = newport.SMC100(port='/dev/ttyUSB0', dev_number=1)
         self.spect = acquisition.Spectrometer(test)
 
         self.measured_trace = None
@@ -54,11 +55,13 @@ class FROG:
         self.algo = phase_retrieval.PhaseRetrieval()
 
     def initialize(self, mode=0):
+        """Connect to the devices."""
         self.stage.initialize()
         self.spect.initialize(mode)
 
 
     def measure(self, sig_progress, sig_measure, start_pos, max_meas, step_size):
+        """Carries out the measurement loop."""
         # Delete previously measured trace from memory.
         self.measured_trace = None
         self.used_settings = None
@@ -82,7 +85,8 @@ class FROG:
             sig_measure.emit(2, frog_array)
             sleep(0.2)
             sig_progress.emit(i+1)
-            if self.stop_measure: break
+            if self.stop_measure:
+                break
         if self.stop_measure:
             print("Measurement aborted!")
         else:
@@ -93,7 +97,8 @@ class FROG:
             print("Measurement finished!")
 
     def scale_pxl_values(self, frog_array):
-        if self.spect.mode == 0: # for CCD camera
+        """Maximize contrast of the image"""
+        if self.spect.mode == 0: # for ccd/cmos camera
             # Scale image according to bit depth
             pix_format = self.spect.camera.pixFormat()
             if pix_format == 'Mono8':
@@ -106,7 +111,7 @@ class FROG:
             # Maybe there is no scaling needed...
         return frog_array_scaled
 
-    def save_settings(self, step_size, step_num):
+    def save_settings(self, step_size, step_num: int):
         """Returns the settings of the last measurement as dictionary"""
         date = datetime.now().strftime('%Y-%m-%d')
         time = datetime.now().strftime('%H:%M:%S')
@@ -157,17 +162,22 @@ class FROG:
             raise Exception("Calibration for ANDO spectrometer not yet implemented!")
         return vperpx
 
-    def retrieve_phase(self, sig_retdata, sig_retlabels, sig_rettitles, sig_retaxis, pixels, GTol, iterMAX):
+    def retrieve_phase(
+        self, sig_retdata, sig_retlabels, sig_rettitles, sig_retaxis,
+        pixels, GTol, iterMAX):
+        """Execute phase retrieval algorithm."""
         if self.measured_trace is not None:
             ccddt = self.used_settings['ccddt']
             ccddv = self.used_settings['ccddv']
-            self.algo.prepFROG(ccddt=ccddt, ccddv=ccddv, N=pixels, ccdimg=self.measured_trace, flip=2)
+            self.algo.prepFROG(ccddt=ccddt, ccddv=ccddv, N=pixels, \
+                ccdimg=self.measured_trace, flip=2)
             self.algo.retrievePhase(GTol=GTol, iterMAX=iterMAX, signal_data=sig_retdata, \
                 signal_label=sig_retlabels, signal_title=sig_rettitles, signal_axis=sig_retaxis)
         else:
             raise Exception('No recorded trace in buffer!')
 
     def close(self):
+        """Close connection with devices."""
         self.stage.close()
         self.spect.close()
 

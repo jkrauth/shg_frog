@@ -9,16 +9,11 @@ Author: Julian Krauth
 Date created: 2019/12/08
 Python Version: 3.7
 """
-import os
-import sys
 import numpy as np
 
-cur_dir = os.path.abspath(os.path.dirname(__file__))
-sys.path.append(cur_dir)
-python_dir = os.path.join(cur_dir, "..", "..", "Python")
-sys.path.append(python_dir)
+from labdevices import ando as ANDO
+from labdevices import allied_vision
 
-from Controller import ANDO_SPECTROMETER, ALLIED_VISION_CCD
 
 class Spectrometer:
     """This class defines the model for the Spectrometer."""
@@ -26,11 +21,11 @@ class Spectrometer:
 
     def __init__(self, test=True):
         if test:
-            self.ando = ANDO_SPECTROMETER.AndoSpectrumAnalyzerDummy()
-            self.camera = ALLIED_VISION_CCD.CCDcameraDummy()
+            self.ando = ANDO.SpectrumAnalyzerDummy()
+            self.camera = allied_vision.MantaDummy()
         else:
-            self.ando = ANDO_SPECTROMETER.AndoSpectrumAnalyzer()
-            self.camera = ALLIED_VISION_CCD.CCDcamera()
+            self.ando = ANDO.SpectrumAnalyzer()
+            self.camera = allied_vision.Manta(camera_id='DEV_000F314E1E59')
 
     def initialize(self, mode):
         """Connect to the device."""

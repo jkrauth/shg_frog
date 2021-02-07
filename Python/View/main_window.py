@@ -20,14 +20,14 @@ from pyqtgraph.parametertree import Parameter, ParameterTree
 import pyqtgraph as pg
 
 CUR_DIR = os.path.abspath(os.path.dirname(__file__))
-config_dir = os.path.join(CUR_DIR, "..", "..", "Examples", "config")
+config_dir = os.path.join(CUR_DIR, "..", "..", "Config")
 sys.path.append(CUR_DIR)
 
 import general_worker
 from roi_window import ROIGraphics
 from retrieval_window import RetrievalGraphics
 
-class MainWindow(QtWidgets. QMainWindow):
+class MainWindow(QtWidgets.QMainWindow):
     """This is the main window of the GUI for the FROG interface.
     The window is designed with Qt Designer and loaded into this class.
     """
@@ -69,7 +69,8 @@ class MainWindow(QtWidgets. QMainWindow):
         uic.loadUi(os.path.join(gui_path, 'GUI/main_window.ui'), self)
 
         # Change window title if running in test mode
-        if test: self.setWindowTitle('SHG Frog (TEST)')
+        if test:
+            self.setWindowTitle('SHG Frog (TEST)')
 
         # Set window icon
         self.setWindowIcon(QtGui.QIcon(os.path.join(gui_path, 'GUI/icon.png')))
@@ -131,7 +132,8 @@ class MainWindow(QtWidgets. QMainWindow):
         index = self.dropdown.currentIndex()
         # Do GUI actions
         self.dropdown.setEnabled(not checked)
-        if index==0: self.btn_roi.setEnabled(checked)
+        if index==0:
+            self.btn_roi.setEnabled(checked)
         self.btn_connect.setText(btn[checked])
         self.btn_connect.setStyleSheet(f"background-color:{col[checked]}")
         self.btn_measure.setEnabled(checked)
@@ -260,8 +262,10 @@ class MainWindow(QtWidgets. QMainWindow):
             while os.path.exists(save_path.format(file_num) + filetype):
                 file_num += 1
             pix_format = self.par.param('ALLIED VISION CCD').child('PixelFormat').value()
-            if pix_format == 'Mono8': bit_type = np.uint8
-            elif pix_format == 'Mono12': bit_type = np.uint16
+            if pix_format == 'Mono8':
+                bit_type = np.uint8
+            elif pix_format == 'Mono12':
+                bit_type = np.uint16
             # Save matrix as image with numbered filename
             imageio.imsave(save_path.format(file_num) + filetype, \
                         self.frog.measured_trace.astype(bit_type))
@@ -286,10 +290,10 @@ class MainWindow(QtWidgets. QMainWindow):
         pos_par.setValue(self.frog.stage.position)
 
     def modifyProgress(self, iter_val):
-       """For changing the progress bar, using an iteration value"""
-       max_val = self.par.param('Newport Stage').child('Number of steps').value()
-       val = int(100*(float(iter_val)/float(max_val)))
-       self.progress.setValue(val)
+        """For changing the progress bar, using an iteration value"""
+        max_val = self.par.param('Newport Stage').child('Number of steps').value()
+        val = int(100*(float(iter_val)/float(max_val)))
+        self.progress.setValue(val)
 
     def phase_action(self):
         # Open retrieval window
@@ -428,7 +432,7 @@ class FrogParams:
         start_par.sigValueChanged.connect(self.showSteps)
         step_par.sigValueChanged.connect(self.showSteps)
 
-    def setCropLimits(self,param,changes):
+    def setCropLimits(self, param, changes):
         maxW = self.DEFAULTS['maxW']
         maxH = self.DEFAULTS['maxH']
         for param, change, data in changes:
@@ -480,19 +484,19 @@ class FrogParams:
         roi_par.child('Width').setValue(int(size[0]))
         roi_par.child('Height').setValue(int(size[1]))
 
-    def setStepLimits(self,param,val):
+    def setStepLimits(self, param, val):
         step_par = self.par.param('Newport Stage').child('Step Size')
         step_par.setLimits([0.2,abs(val)])
 
-    def setStartPosLimits(self,param,val):
+    def setStartPosLimits(self, param, val):
         start_pos = self.par.param('Newport Stage').child('Start Position')
         start_pos.setLimits([-val,-0.2])
 
-    def showPos(self,val):
+    def showPos(self, val):
         pos = self.par.param('Newport Stage').child('Position')
         pos.setValue(val)
 
-    def showSteps(self,dummy):
+    def showSteps(self, dummy):
         start_pos = self.par.param('Newport Stage').child('Start Position')
         step_size = self.par.param('Newport Stage').child('Step Size')
         val = int(round(2*abs(start_pos.value())/step_size.value()))
@@ -555,14 +559,3 @@ class FrogGraphics:
 
     """ End FROG graphics class """
 
-
-
-
-
-if __name__ == "__main__":
-
-    import sys
-
-
-    app = QtGui.QApplication([])
-    win = MainWindow()

@@ -29,14 +29,14 @@ Software for measurement and characterization of ultra-fast laser pulses using t
   * pyQtGraph v0.10.0
   * the pyVISA package with the pyVISA-py backend
     (connection to a Newport translation stage via a Serial Port)
-  * the plx_gpib_ethernet package [GitHub](https://github.com/nelsond/prologix-gpib-ethernet)
+  * [plx_gpib_ethernet](https://github.com/nelsond/prologix-gpib-ethernet)
     (connection to the Spectrum Analyzer (GPIB) via an Ethernet Adapter)
-  * the pymba package [https://github.com/morefigs/pymba]
-    (connection to the ALLIED VISION CCD camera via Ethernet)
+  * [Pymba](https://github.com/morefigs/pymba)
+    (python driver package for the Allied Vision cameras)
   * pyYAML
-* run `python Examples/start_gui.py` to start the software, the option `python Examples/start_gui.py test` uses virtual devices.
+  * imageio
 * calibration
-  * The calibration of the camera is done via the config.yml file in the Examples/config folder,
+  * The calibration of the camera is done via the config.yml file in the `Config` folder,
     where the according numbers have to be set.
 
 ### Hardware
@@ -70,13 +70,13 @@ included in the FROG software via the Pymba package, a python wrapper for Vimba.
 The software is started with
 
 ```
-$ python Examples/start_gui.py
+$ python start_gui.py
 ```
 
 A testing mode can be used by
 
 ```
-$ python Examples/start_gui.py test
+$ python start_gui.py test
 ```
 
 In this case virtual devices are used and no connection to real devices is required.

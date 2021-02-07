@@ -29,12 +29,9 @@ Date created: 2019/11/27
 Python Version: 3.7
 """
 
-
 import numpy as np
 import imageio
 import yaml
-
-import pylab as plt
 
 from pyqtgraph.Qt import QtGui, QtCore
 import pyqtgraph as pg

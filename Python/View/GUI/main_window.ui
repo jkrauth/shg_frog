@@ -56,7 +56,7 @@
          <widget class="QComboBox" name="dropdown">
           <item>
            <property name="text">
-            <string>CCD + Stage</string>
+            <string>Camera + Stage</string>
            </property>
           </item>
           <item>
