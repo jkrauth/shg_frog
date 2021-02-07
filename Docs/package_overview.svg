@@ -1,6 +1,4 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!-- Created with Inkscape (http://www.inkscape.org/) -->
-
 <svg
    xmlns:dc="http://purl.org/dc/elements/1.1/"
    xmlns:cc="http://creativecommons.org/ns#"
@@ -16,7 +14,7 @@
    height="617.88336"
    viewBox="0 0 1078.5284 617.88336"
    sodipodi:docname="package_overview.svg"
-   inkscape:version="0.92.3 (d244b95, 2018-08-02)"><metadata
+   inkscape:version="1.0.1 (0767f8302a, 2020-10-17)"><metadata
      id="metadata8"><rdf:RDF><cc:Work
          rdf:about=""><dc:format>image/svg+xml</dc:format><dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" /><dc:title /></cc:Work></rdf:RDF></metadata><defs
@@ -29,21 +27,22 @@
      guidetolerance="10"
      inkscape:pageopacity="0"
      inkscape:pageshadow="2"
-     inkscape:window-width="1480"
-     inkscape:window-height="822"
+     inkscape:window-width="1848"
+     inkscape:window-height="1030"
      id="namedview4"
      showgrid="false"
      inkscape:zoom="0.84100816"
      inkscape:cx="522.61904"
      inkscape:cy="295.82881"
-     inkscape:window-x="270"
-     inkscape:window-y="332"
-     inkscape:window-maximized="0"
+     inkscape:window-x="72"
+     inkscape:window-y="27"
+     inkscape:window-maximized="1"
      inkscape:current-layer="g10"
      fit-margin-top="5"
      fit-margin-left="5"
      fit-margin-right="5"
-     fit-margin-bottom="5" /><g
+     fit-margin-bottom="5"
+     inkscape:document-rotation="0" /><g
      id="g10"
      inkscape:groupmode="layer"
      inkscape:label="package_overview"
@@ -74,12 +73,12 @@
    id="text28"
    style="font-variant:normal;font-size:16px;font-family:'Nimbus Roman No9 L';-inkscape-font-specification:NimbusRomNo9L-Medi;writing-mode:lr-tb;fill:#000000;fill-opacity:1;fill-rule:nonzero;stroke:none"
    transform="scale(1,-1)"
-   x="91.12944"
+   x="102.16062"
    y="-284.44128"><tspan
      id="tspan26"
      sodipodi:role="line"
      y="-284.44128"
-     x="91.12944 101.80144 109.80144 117.80144 131.12944 140.07344 144.52144 151.62544">Examples</tspan></text>
+     x="102.16062">Config</tspan></text>
 
 <g
    transform="matrix(1,0,0,-1,0,595.27557)"
@@ -98,39 +97,9 @@
      y="-528.87952"
      x="507.86298 517.63898 525.63898 530.96698 539.86298 547.86298">Python</tspan></text>
 
-<g
-   transform="matrix(1,0,0,-1,0,595.27557)"
-   id="g38"><path
-     inkscape:connector-curvature="0"
-     id="path40"
-     style="fill:#c2dcff;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1.04521203;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-     d="m 54.082,382.879 h 94.859 c 3.321,0 5.993,2.676 5.993,5.996 v 11.984 c 0,3.325 -2.672,5.996 -5.993,5.996 H 54.082 c -3.32,0 -5.992,-2.671 -5.992,-5.996 v -11.984 c 0,-3.32 2.672,-5.996 5.992,-5.996 z" /></g><text
-   id="text44"
-   style="font-variant:normal;font-size:13px;font-family:'Nimbus Roman No9 L';-inkscape-font-specification:NimbusRomNo9L-Regu;writing-mode:lr-tb;fill:#000000;fill-opacity:1;fill-rule:nonzero;stroke:none"
-   transform="scale(1,-1)"
-   x="83.458878"
-   y="-197.3857"><tspan
-     id="tspan42"
-     sodipodi:role="line"
-     y="-197.3857"
-     x="83.458878 92.129883 98.629883 105.12988 109.45888 113.07288">Config</tspan></text>
 
-<g
-   transform="matrix(1,0,0,-1,0,595.27557)"
-   id="g46"><path
-     inkscape:connector-curvature="0"
-     id="path48"
-     style="fill:#c2dcff;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1.04521203;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-     d="m 279.043,99.766 h 94.855 c 3.321,0 5.997,2.672 5.997,5.992 v 11.988 c 0,3.32 -2.676,5.992 -5.997,5.992 h -94.855 c -3.32,0 -5.996,-2.672 -5.996,-5.992 v -11.988 c 0,-3.32 2.676,-5.992 5.996,-5.992 z" /></g><text
-   id="text52"
-   style="font-variant:normal;font-size:13px;font-family:'Nimbus Roman No9 L';-inkscape-font-specification:NimbusRomNo9L-Regu;writing-mode:lr-tb;fill:#000000;fill-opacity:1;fill-rule:nonzero;stroke:none"
-   transform="scale(1,-1)"
-   x="299.55862"
-   y="-479.17435"><tspan
-     id="tspan50"
-     sodipodi:role="line"
-     y="-479.17435"
-     x="299.55862 308.22961 314.72961 321.22961 324.8436 329.17261 335.67261 339.28662 342.9006 348.67261">Controller</tspan></text>
+
+
 
 <g
    transform="matrix(1,0,0,-1,0,743.31219)"
@@ -264,12 +233,12 @@
    id="text108"
    style="font-variant:normal;font-size:12px;font-family:'Nimbus Roman No9 L';-inkscape-font-specification:NimbusRomNo9L-Regu;writing-mode:lr-tb;fill:#ff0000;fill-opacity:1;fill-rule:nonzero;stroke:none"
    transform="scale(1,-1)"
-   x="61.523304"
-   y="-248.69528"><tspan
+   x="63.169903"
+   y="-165.75279"><tspan
      id="tspan106"
      sodipodi:role="line"
-     y="-248.69528"
-     x="61.523304 66.191307 69.527306 74.855301 78.851303 82.187302 88.187302 94.187309 100.18731 103.52331 106.52331 112.52331">start_gui.py</tspan></text>
+     y="-165.75279"
+     x="63.169903 67.837914 71.173912 76.501907 80.49791 83.833908 89.833908 95.833916 101.83392 105.16991 108.16991 114.16991">start_gui.py</tspan></text>
 
 <text
    id="text112"
@@ -295,12 +264,12 @@
    id="text124"
    style="font-variant:normal;font-size:12px;font-family:'Nimbus Roman No9 L';-inkscape-font-specification:NimbusRomNo9L-Regu;writing-mode:lr-tb;fill:#000000;fill-opacity:1;fill-rule:nonzero;stroke:none"
    transform="scale(1,-1)"
-   x="82.487991"
-   y="-169.9034"><tspan
+   x="62.800968"
+   y="-245.2406"><tspan
      id="tspan122"
      sodipodi:role="line"
-     x="82.487991"
-     y="-169.9034">config.yml </tspan></text>
+     x="62.800968"
+     y="-245.2406">config.yml </tspan></text>
 
 <text
    id="text128"
@@ -329,8 +298,8 @@
      id="path144"
      style="fill:none;stroke:#000000;stroke-width:1.29826796;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
      d="M 20.113,24.781 H 228.648 V 249.726 H 20.113 Z" /></g><path
-   d="M 20.113,323.51357 H 228.648 V 115.88032 H 20.113 Z"
-   style="fill:none;stroke:#000000;stroke-width:1.29826796;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+   d="m 20.113,323.51357 h 208.535 l 0,-126.26799 H 20.113 Z"
+   style="fill:none;stroke:#000000;stroke-width:1.29827;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
    id="path148"
    inkscape:connector-curvature="0"
    sodipodi:nodetypes="ccccc" /><g
@@ -470,44 +439,11 @@
      y="-393.27802"
      style="stroke-width:0.75">frog (sketch of setup)</tspan></text>
 
-<text
-   xml:space="preserve"
-   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:12px;line-height:1.25;font-family:'Nimbus Roman No9 L';-inkscape-font-specification:'Nimbus Roman No9 L';letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.75"
-   x="308.01999"
-   y="-449.50165"
-   id="text5178"
-   transform="scale(1,-1)"><tspan
-     sodipodi:role="line"
-     id="tspan5176"
-     x="308.01999"
-     y="-449.50165"
-     style="stroke-width:0.75">ALLIED_VISION_CCD.py</tspan></text>
 
-<text
-   transform="scale(1,-1)"
-   id="text5182"
-   y="-449.50165"
-   x="483.02893"
-   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:12px;line-height:1.25;font-family:'Nimbus Roman No9 L';-inkscape-font-specification:'Nimbus Roman No9 L';letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.75"
-   xml:space="preserve"><tspan
-     style="stroke-width:0.75"
-     y="-449.50165"
-     x="483.02893"
-     id="tspan5180"
-     sodipodi:role="line">ANDO_SPECTROMETER.py</tspan></text>
 
-<text
-   xml:space="preserve"
-   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:12px;line-height:1.25;font-family:'Nimbus Roman No9 L';-inkscape-font-specification:'Nimbus Roman No9 L';letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.75"
-   x="645.55603"
-   y="-449.50165"
-   id="text5186"
-   transform="scale(1,-1)"><tspan
-     sodipodi:role="line"
-     id="tspan5184"
-     x="645.55603"
-     y="-449.50165"
-     style="stroke-width:0.75">NEWPORT.py</tspan></text>
+
+
+
 
 <text
    transform="scale(1,-1)"
