@@ -633,7 +633,7 @@ class PhaseRetrieval:
         This method makes use of makeFROG and prepFROG.
         """
         if Fm==None:
-            if int(np.sum(self.Fm)) is not 0:
+            if int(np.sum(self.Fm)) != 0:
                 Fm = self.Fm
             else:
                 print(f"Read data from file {self.fp_name}{self.ftype}")
