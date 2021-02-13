@@ -32,7 +32,8 @@ Software for measurement and characterization of ultra-fast laser pulses using t
   * [plx_gpib_ethernet](https://github.com/nelsond/prologix-gpib-ethernet)
     (connection to the Spectrum Analyzer (GPIB) via an Ethernet Adapter)
   * [Pymba](https://github.com/morefigs/pymba)
-    (python driver package for the Allied Vision cameras)
+    (python driver package for the Allied Vision cameras,
+    requires the VIMBA package from Allied Vision)
   * matplotlib (for colormaps)
   * pyYAML
   * imageio
