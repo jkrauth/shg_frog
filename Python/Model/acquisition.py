@@ -44,7 +44,7 @@ class Spectrometer:
 
     def get_camera_spectrum(self):
         """Get spectrum from ccd camera"""
-        img = self.camera.takeSingleImg()
+        img = self.camera.take_single_img()
         # Project image onto a single axis and normalize
         y = np.divide(np.sum(img,0), float(np.ma.size(img,0)))
         return y
@@ -77,8 +77,8 @@ class Spectrometer:
         else:
             self.camera.gain = val
 
-    def imgFormat(self, offsetx=None, offsety=None,
-                  width=None, height=None):
+    def img_format(self, offsetx=None, offsety=None,
+            width=None, height=None):
         """
         Get/Set position and format of the image which is acquired
         from the camera chip. (It can be just a fraction of the full
@@ -103,38 +103,38 @@ class Spectrometer:
             if height is not None:
                 self.camera.roi_dy = height
 
-    def trigSource(self, source=None):
+    def trig_source(self, source=None):
         if source is None:
-            return self.camera.trigSource()
+            return self.camera.trig_source()
         else:
-            self.camera.trigSource(source)
+            self.camera.trig_source(source)
 
-    def pixFormat(self, pix=None):
+    def pix_format(self, pix=None):
         if pix is None:
-            return self.camera.pixFormat()
+            return self.camera.pix_format()
         else:
-            self.camera.pixFormat(pix)
+            self.camera.pix_format(pix)
 
-    def imgFormatFull(self):
+    def img_format_full(self):
         """Set image format to full size of camera sensor"""
         self.camera.roi_x = 0
         self.camera.roi_y = 0
-        self.camera.roi_dx = self.camera.sensorSize[0]
-        self.camera.roi_dy = self.camera.sensorSize[1]
+        self.camera.roi_dx = self.camera.sensor_size[0]
+        self.camera.roi_dy = self.camera.sensor_size[1]
 
-    def takeSingleImg(self):
-        return self.camera.takeSingleImg()
+    def take_single_img(self):
+        return self.camera.take_single_img()
 
-    def takeFullImg(self):
+    def take_full_img(self):
         """Saves current roi parameters, changes to full sensor size,
         takes full image, restores old roi parameters in the settings."""
         x = self.camera.roi_x
         y = self.camera.roi_y
         dx = self.camera.roi_dx
         dy = self.camera.roi_dy
-        self.imgFormatFull()
-        img = self.takeSingleImg()
-        self.imgFormat(x, y, dx, dy)
+        self.img_format_full()
+        img = self.take_single_img()
+        self.img_format(x, y, dx, dy)
         return img
 
 
@@ -150,11 +150,11 @@ class Spectrometer:
         else:
             self.ando.span(span)
 
-    def cwMode(self, cw=None):
+    def cw_mode(self, cw=None):
         if cw is None:
-            return self.ando.cwMode()
+            return self.ando.cw_mode()
         else:
-            self.ando.cwMode(cw)
+            self.ando.cw_mode(cw)
 
-    def peakHoldMode(self, time):
-        self.ando.peakHoldMode(time)
+    def peak_hold_mode(self, time):
+        self.ando.peak_hold_mode(time)

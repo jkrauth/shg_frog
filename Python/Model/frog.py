@@ -100,7 +100,7 @@ class FROG:
         """Maximize contrast of the image"""
         if self.spect.mode == 0: # for ccd/cmos camera
             # Scale image according to bit depth
-            pix_format = self.spect.camera.pixFormat()
+            pix_format = self.spect.camera.pix_format()
             if pix_format == 'Mono8':
                 scale = 255.
             elif pix_format == 'Mono12':

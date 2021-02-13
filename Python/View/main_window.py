@@ -124,6 +124,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @QtCore.pyqtSlot(bool)
     def connect_action(self, checked):
+        """Connect to devices selected in the dropdown menu.
+        Adapt button color and text accordingly."""
         # Get dictionaries
         dev = self.DEFAULTS['dev']
         btn = self.DEFAULTS['btn_connect']
@@ -168,7 +170,7 @@ class MainWindow(QtWidgets.QMainWindow):
         crop_par = spect_par.child('Crop Image')
         crop_par.sigTreeStateChanged.connect(self.crop_action)
         tsource_par = spect_par.child('Trigger').child('Source')
-        tsource_par.sigValueChanged.connect(lambda param,val:self.frog.spect.trigSource(val))
+        tsource_par.sigValueChanged.connect(lambda param,val:self.frog.spect.trig_source(val))
         # ANDO Connections
         spect_par = self.par.param('ANDO Spectrometer')
         ctr_par = spect_par.child('Center')
@@ -176,9 +178,9 @@ class MainWindow(QtWidgets.QMainWindow):
         span_par = spect_par.child('Span')
         span_par.sigValueChanged.connect(lambda param,val:self.frog.spect.span(val))
         cw_par = spect_par.child('CW mode')
-        cw_par.sigValueChanged.connect(lambda param,val:self.frog.spect.cwMode(val))
+        cw_par.sigValueChanged.connect(lambda param,val:self.frog.spect.cw_mode(val))
         holdtime_par = spect_par.child('Rep. time')
-        holdtime_par.sigValueChanged.connect(lambda param,val:self.frog.spect.peakHoldMode(val))
+        holdtime_par.sigValueChanged.connect(lambda param,val:self.frog.spect.peak_hold_mode(val))
 
     def crop_action(self, param, changes):
         """Define what happens when changing the crop/roi parameters in the parameter tree"""
@@ -186,14 +188,14 @@ class MainWindow(QtWidgets.QMainWindow):
                 'Xpos':'offsetx','Ypos':'offsety'}
         for param, change, data in changes:
             if change=='value':
-                self.frog.spect.imgFormat(**{dictio[param.name()]:data})
+                self.frog.spect.img_format(**{dictio[param.name()]:data})
                 #print dict[param.name()], data
 
     def roi_action(self):
         """Defines the actions when calling the ROI button"""
         # Create ROI window with a full image taken by the camera
         self.win_roi.createWin()
-        self.win_roi.set_image(self.frog.spect.takeFullImg())
+        self.win_roi.set_image(self.frog.spect.take_full_img())
         # Set the ROI frame according to the crop parameters in parameter tree
         self.win_roi.update_ROI_frame(*self.par_class.get_crop_par())
         # If ROI changes, update parameters, update_crop_param() makes sure that crop parameters
