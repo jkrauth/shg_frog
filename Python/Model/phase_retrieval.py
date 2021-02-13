@@ -1,6 +1,6 @@
 """
 Module that implements the phase retrieval algorithm used by the FROG software
-
+*********
 The realization of this GP (general projections) phase retrieval algorithm
 in here is based on the Matlab code from Steven Byrnes who wrote an extension
 of Adam Wyatt's MATLAB FROG program. Various features include anti-aliasing
@@ -21,7 +21,10 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
 CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*********
 
+Julian Krauth tranlated the code from Matlab into Python for the use in the 
+shg_frog python package.
 
 File name: phase_retrieval.py
 Author: Julian Krauth
