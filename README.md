@@ -33,11 +33,11 @@ Software for measurement and characterization of ultra-fast laser pulses using t
     (connection to the Spectrum Analyzer (GPIB) via an Ethernet Adapter)
   * [Pymba](https://github.com/morefigs/pymba)
     (python driver package for the Allied Vision cameras)
+  * matplotlib (for colormaps)
   * pyYAML
   * imageio
-* calibration
-  * The calibration of the camera is done via the config.yml file in the `Config` folder,
-    where the according numbers have to be set.
+* configuration and calibration
+  * Before starting, adapt the config.yml file in the `Config` folder to your needs.
 
 ### Hardware
 
@@ -48,16 +48,16 @@ Software for measurement and characterization of ultra-fast laser pulses using t
 * The minimum incremental motion of this device is 0.2 micron. For laser pulses with a pulse length
   of <20fs a better actuator might be considered.
 
-#### ANDO Spectrometer
+#### Spectrometer
 
-We use the ANDO Spectrometer AQ-6315A.
+We mostly use the camera in combination with a grating because the measurements go much faster this way. For comparison, however, it might be helpful to use the ANDO Spectrometer AQ-6315A.
 
 * In the case of a low repetition rate the ANDO spectrometer has to run in pulsed mode.
-* The spectrometer is also used to calibrate the grating-CCD version of the FROG.
+* The spectrometer is also used to calibrate the grating&camera version of the FROG.
 
-#### Allied Vision CCD Camera
+#### Camera
 
-We use the Allied Vision Manta G235B CCD camera. Other Allied Vision Manta GigE cameras should
+We use the Allied Vision Manta G235B camera. Other Allied Vision Manta GigE cameras should
 also work. The original software for this camera is the Vimba Software, written in C/C++. The camera is
 included in the FROG software via the Pymba package, a python wrapper for Vimba.
 
