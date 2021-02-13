@@ -6,7 +6,9 @@ Author: Julian Krauth
 Date created: 2020/01/17
 Python Version: 3.7
 """
+import numpy as np
 import pyqtgraph as pg
+from matplotlib import cm
 
 class RetrievalGraphics:
     """
