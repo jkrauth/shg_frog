@@ -295,15 +295,15 @@ class FrogParams:
 
         # Set limits of Start Position, depending on offset
         start_par.setLimits([-off_par.value(),-0.2])
-        off_par.sigValueChanged.connect(self.setStartPosLimits)
+        off_par.sigValueChanged.connect(self.set_start_pos_limits)
 
         # Set limits of Step Size, depending on Start Position
         step_par.setLimits([0.2,abs(start_par.value())])
-        start_par.sigValueChanged.connect(self.setStepLimits)
+        start_par.sigValueChanged.connect(self.set_step_limits)
 
         # Always update number of steps, given by start pos and step size
-        start_par.sigValueChanged.connect(self.showSteps)
-        step_par.sigValueChanged.connect(self.showSteps)
+        start_par.sigValueChanged.connect(self.show_steps)
+        step_par.sigValueChanged.connect(self.show_steps)
 
     def get_sensor_size(self):
         return self._sensor_width, self._sensor_height
@@ -359,19 +359,19 @@ class FrogParams:
         roi_par.child('Width').setValue(int(size[0]))
         roi_par.child('Height').setValue(int(size[1]))
 
-    def setStepLimits(self, param, val):
+    def set_step_limits(self, param, val):
         step_par = self.par.param('Newport Stage').child('Step Size')
         step_par.setLimits([0.2,abs(val)])
 
-    def setStartPosLimits(self, param, val):
+    def set_start_pos_limits(self, param, val):
         start_pos = self.par.param('Newport Stage').child('Start Position')
         start_pos.setLimits([-val,-0.2])
 
-    def showPos(self, val):
+    def show_pos(self, val):
         pos = self.par.param('Newport Stage').child('Position')
         pos.setValue(val)
 
-    def showSteps(self, dummy):
+    def show_steps(self, dummy):
         start_pos = self.par.param('Newport Stage').child('Start Position')
         step_size = self.par.param('Newport Stage').child('Step Size')
         val = int(round(2*abs(start_pos.value())/step_size.value()))
@@ -379,11 +379,14 @@ class FrogParams:
         num = self.par.param('Newport Stage').child('Number of steps')
         num.setValue(val)
 
-    def printParChanges(self):
-        # Do print changes in parametertree
-        self.par.sigTreeStateChanged.connect(self._Change)
+    def print_par_changes(self, val: bool=True):
+        if val:
+            # Do print changes in parametertree
+            self.par.sigTreeStateChanged.connect(self._change)
+        else:
+            self.par.sigTreeStateChanged.disconnect(self._change)
 
-    def _Change(self, param, changes):
+    def _change(self, param, changes):
         ## If anything changes in the parametertree, print a message
         for param, change, data in changes:
             path = self.par.childPath(param)

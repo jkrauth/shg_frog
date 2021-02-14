@@ -79,12 +79,12 @@ class MainWindow(QtWidgets.QMainWindow):
         # Create Parametertree from FrogParams class
         self.par_class = self.frog.parameters
         # Print changes of parameters throughout operation
-        self.par_class.printParChanges()
+        self.par_class.print_par_changes()
         self.par = self.par_class.par
         # Create ParameterTree widget filled with above parameters
-        self.parTree = ParameterTree()
-        self.parTree.setParameters(self.par, showTop=False)
-        self.gridLayout.addWidget(self.parTree,1,0,1,2)
+        self.parameter_tree = ParameterTree()
+        self.parameter_tree.setParameters(self.par, showTop=False)
+        self.gridLayout.addWidget(self.parameter_tree,1,0,1,2)
         # Implement Actions for ParameterTree
         self.tree_stage_actions()
         self.tree_spect_actions()
@@ -138,7 +138,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.par.param(dev[index]).hide()
             self.par.param('Newport Stage').hide()
         # needed for updating par tree in GUI
-        self.parTree.setParameters(self.par, showTop=False)
+        self.parameter_tree.setParameters(self.par, showTop=False)
 
 
     def tree_stage_actions(self):
