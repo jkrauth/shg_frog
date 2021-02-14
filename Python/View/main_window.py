@@ -2,25 +2,19 @@
 This module loads the MainWindow of the GUI from a QTdesigner file
 and connects all widgets to the methods of the devices.
 
-An example of how to run the code is found at the end of this file.
-
 File name: main_window.py
 Author: Julian Krauth
 Date created: 2019/12/02
 Python Version: 3.7
 """
-import sys
 import pathlib
 import yaml
 import numpy as np
 import imageio
 
 from PyQt5 import QtWidgets, uic, QtCore, QtGui
-from pyqtgraph.parametertree import Parameter, ParameterTree
+from pyqtgraph.parametertree import ParameterTree
 import pyqtgraph as pg
-
-#CUR_DIR = pathlib.Path(__file__)
-#sys.path.append(CUR_DIR)
 
 from . import general_worker
 from .roi_window import ROIGraphics
@@ -83,7 +77,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.btn_save.clicked.connect(self.save_action)
 
         # Create Parametertree from FrogParams class
-        self.par_class = FrogParams()
+        self.par_class = self.frog.parameters
         # Print changes of parameters throughout operation
         self.par_class.printParChanges()
         self.par = self.par_class.par
@@ -244,7 +238,8 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             pass
 
-    def get_unique_path(self, directory: pathlib.Path, name_pattern: str):
+    @staticmethod
+    def get_unique_path(directory: pathlib.Path, name_pattern: str):
         counter = 0
         while True:
             counter += 1
@@ -326,201 +321,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
 
-class FrogParams:
-    """
-    Class which implements the parameters used by the parametertree widget.
-    """
-    # Should be loaded from config file and not be hard coded
-    DEFAULTS = {'maxW': 1936,
-                'maxH': 1216,
-    }
-
-    def __init__(self):
-        # Define parameters for parametertree
-        params = [
-            {'name':'Phase Retrieval','type':'group','visible':True,
-             'children': [
-                 {'name':'prepFROG Size', 'type': 'int', 'value': 128},
-                 {'name':'Seed', 'type': 'list', 'values': {"Random":0,"fromFile":1}, 'value':0},
-                 {'name':'Max. Iterations', 'type': 'int', 'value': 200},
-                 {'name':'G Tolerance', 'type': 'float', 'value': 0.001}
-             ]},
-            {'name':'ANDO Spectrometer','type':'group','visible':False,
-             'children': [
-                 {'name':'Center', 'type': 'float', 'value': 390.},
-                 {'name':'Span', 'type': 'float', 'value': 20.},
-                 {'name':'CW mode', 'type': 'bool', 'value': True},
-                 {'name':'Rep. time', 'type': 'float', 'value': 36},
-                 {'name':'Sampling', 'type': 'int', 'value': 201}
-             ]},
-            {'name':'ALLIED VISION CCD','type':'group','visible':False,
-             'children': [
-                 {'name':'Exposure', 'type': 'float', 'value': 0.036, 'dec': True, 'step': 1, 'siPrefix': True, 'suffix': 's'},
-                 {'name':'Gain', 'type': 'float', 'value': 0, 'dec': False, 'step': 1},
-                 {'name':'Crop Image', 'type': 'group', 'expanded':False,
-                  'children': [
-                     {'name':'Width','type':'int',
-                      'value': 600,'limits':[1,self.DEFAULTS['maxW']],'step': 2},
-                     {'name':'Height','type':'int',
-                      'value': 10,'limits':[1,self.DEFAULTS['maxH']],'step': 2},
-                     {'name':'Xpos','type':'int','value': 400,'step': 2},
-                     {'name':'Ypos','type':'int','value': 470,'step': 2}
-                 ]},
-                 {'name':'Trigger', 'type': 'group', 'children': [
-                     {'name':'Mode','type':'list','visible':False,
-                      'values': {"On":1,"Off":0},'value':1},
-                     {'name':'Source','type':'list','visible':True,
-                      'values': {"Freerun":'Freerun',
-                                 "External":'Line1'
-                                 #'Line2':'Line2',
-                                 #'FixedRate':'FixedRate',
-                                 #'Software':'Software'
-                      },'value':'External'}
-                 ]},
-                 {'name':'PixelFormat', 'type': 'list',
-                  'values': {'Mono8':'Mono8','Mono12':'Mono12'
-                             #'Mono12Packed':'Mono12Packed'
-                  },
-                  'value':'Mono8'},
-             ]},
-            {'name':'Newport Stage','type':'group','visible':False,
-             'children': [
-                 {'name':'Position', 'type':'float', 'value': 0., 'readonly': True},
-                 {'name':'GoTo', 'type':'float', 'value': 0.},
-                 {'name':'Offset', 'type':'float', 'value': 11370, 'limits':[0,25000]},
-                 {'name':'Start Position', 'type':'float', 'value': -256},
-                 {'name':'Step Size', 'type':'float', 'value': 4.},
-                 {'name':'Number of steps', 'type':'int', 'readonly':True, 'value': 128}
-             ]}
-        ]
-
-        # Create parameter objects
-        self.par = Parameter.create(name='params',
-                              type='group',
-                              children=params)
-
-        ### Some settings regarding CCD parameters ###
-        # Create limits for crop settings
-        crop_par = self.par.param('ALLIED VISION CCD').child('Crop Image')
-        width_par = crop_par.child('Width')
-        height_par = crop_par.child('Height')
-        xpos_par = crop_par.child('Xpos')
-        ypos_par = crop_par.child('Ypos')
-        maxW = self.DEFAULTS['maxW']
-        maxH = self.DEFAULTS['maxH']
-        width_par.setLimits([1,maxW-xpos_par.value()])
-        height_par.setLimits([1,maxH-ypos_par.value()])
-        xpos_par.setLimits([0,maxW-width_par.value()])
-        ypos_par.setLimits([0,maxH-height_par.value()])
-        crop_par.sigTreeStateChanged.connect(self.setCropLimits)
-
-        ### Some settings regarding the Stage parameters ###
-        stage_par = self.par.param('Newport Stage')
-        start_par = stage_par.child('Start Position')
-        step_par = stage_par.child('Step Size')
-        off_par = stage_par.child('Offset')
-
-        # Set limits of Start Position, depending on offset
-        start_par.setLimits([-off_par.value(),-0.2])
-        off_par.sigValueChanged.connect(self.setStartPosLimits)
-
-        # Set limits of Step Size, depending on Start Position
-        step_par.setLimits([0.2,abs(start_par.value())])
-        start_par.sigValueChanged.connect(self.setStepLimits)
-
-        # Always update number of steps, given by start pos and step size
-        start_par.sigValueChanged.connect(self.showSteps)
-        step_par.sigValueChanged.connect(self.showSteps)
-
-    def setCropLimits(self, param, changes):
-        maxW = self.DEFAULTS['maxW']
-        maxH = self.DEFAULTS['maxH']
-        for param, change, data in changes:
-            path = self.par.childPath(param)
-            par = self.par.param(path[0]).child(path[1])
-            if path[2]=='Width':
-                mx = maxW
-                par.child('Xpos').setLimits([0,mx-par.child(path[2]).value()])
-            if path[2]=='Height':
-                mx = maxH
-                par.child('Ypos').setLimits([0,mx-par.child(path[2]).value()])
-            if path[2]=='Xpos':
-                mx = maxW
-                par.child('Width').setLimits([1,mx-par.child(path[2]).value()])
-            if path[2]=='Ypos':
-                mx = maxH
-                par.child('Height').setLimits([1,mx-par.child(path[2]).value()])
-
-    def get_crop_par(self):
-        """ Get the crop parameters from parameter tree"""
-        roi_par = self.par.param('ALLIED VISION CCD').child('Crop Image')
-        xpos = roi_par.child('Xpos').value()
-        ypos = roi_par.child('Ypos').value()
-        width = roi_par.child('Width').value()
-        height = roi_par.child('Height').value()
-        return xpos, ypos, width, height
-
-    def update_crop_param(self, roi):
-        """Used as action when changing roi in roi window"""
-        pos = roi.pos()
-        size = roi.size()
-        # Update the CROP parameters regarding region of interest
-        roi_par = self.par.param('ALLIED VISION CCD').child('Crop Image')
-        # Create even numbers. Odd numbers crash with some cameras
-        # and make sure that offset and size stays in allowed range
-        maxSize = [self.DEFAULTS['maxW'], self.DEFAULTS['maxH']]
-        for i in range(2):
-            if pos[i] < 0:
-                pos[i] = 0
-            if size[i] > maxSize[i]:
-                size[i] = maxSize[i]
-                pos[i] = 0
-            if size[i]+pos[i] > maxSize[i]:
-                size[i] = maxSize[i] - pos[i]
-            pos[i] = round(pos[i]/2.)*2
-            size[i] = round(size[i]/2.)*2
-        roi_par.child('Xpos').setValue(int(pos[0]))
-        roi_par.child('Ypos').setValue(int(pos[1]))
-        roi_par.child('Width').setValue(int(size[0]))
-        roi_par.child('Height').setValue(int(size[1]))
-
-    def setStepLimits(self, param, val):
-        step_par = self.par.param('Newport Stage').child('Step Size')
-        step_par.setLimits([0.2,abs(val)])
-
-    def setStartPosLimits(self, param, val):
-        start_pos = self.par.param('Newport Stage').child('Start Position')
-        start_pos.setLimits([-val,-0.2])
-
-    def showPos(self, val):
-        pos = self.par.param('Newport Stage').child('Position')
-        pos.setValue(val)
-
-    def showSteps(self, dummy):
-        start_pos = self.par.param('Newport Stage').child('Start Position')
-        step_size = self.par.param('Newport Stage').child('Step Size')
-        val = int(round(2*abs(start_pos.value())/step_size.value()))
-
-        num = self.par.param('Newport Stage').child('Number of steps')
-        num.setValue(val)
-
-    def printParChanges(self):
-        # Do print changes in parametertree
-        self.par.sigTreeStateChanged.connect(self._Change)
-
-    def _Change(self, param, changes):
-        ## If anything changes in the parametertree, print a message
-        for param, change, data in changes:
-            path = self.par.childPath(param)
-            if path is not None:
-                childName = '.'.join(path)
-            else:
-                childName = param.name()
-            print("tree changes:")
-            print('  parameter: %s'% childName)
-            print('  change:    %s'% change)
-            print('  data:      %s'% str(data))
-            print('  ----------')
 
 
 class FrogGraphics:
