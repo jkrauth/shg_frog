@@ -181,7 +181,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def roi_action(self):
         """Defines the actions when calling the ROI button"""
         # Create ROI window with a full image taken by the camera
-        self.win_roi.createWin()
+        self.win_roi.create_win()
         self.win_roi.set_image(self.frog.spect.take_full_img())
         # Set the ROI frame according to the crop parameters in parameter tree
         self.win_roi.update_ROI_frame(*self.par_class.get_crop_par())
@@ -221,9 +221,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.measure_thread.finished.connect(self.del_mthread)
         self.measure_thread.finished.connect(self.automatic_toggle)
         # Connect progress button with progress signal
-        self.measure_thread.sig_progress.connect(self.modifyProgress)
+        self.measure_thread.sig_progress.connect(self.modify_progress)
         # Connect plot update with measure signal
-        self.measure_thread.sig_measure.connect(self.plot_class.updateGraphics)
+        self.measure_thread.sig_measure.connect(self.plot_class.update_graphics)
         # Run measurement
         self.measure_thread.start()
 
@@ -272,7 +272,6 @@ class MainWindow(QtWidgets.QMainWindow):
             settings = self.frog.used_settings
             # Add additional information
             settings['measurement number'] = file_num
-            settings['center position'] = self.par.param('Newport Stage').child('Offset').value()
             # maybe add possibility to add a comment: settings['comment'] =
             # Create yaml settings file to the measurement, with numbered name
 
@@ -288,7 +287,7 @@ class MainWindow(QtWidgets.QMainWindow):
         pos_par = self.par.param('Newport Stage').child('Position')
         pos_par.setValue(self.frog.stage.position)
 
-    def modifyProgress(self, iter_val):
+    def modify_progress(self, iter_val):
         """For changing the progress bar, using an iteration value"""
         max_val = self.par.param('Newport Stage').child('Number of steps').value()
         val = int(100*(float(iter_val)/float(max_val)))
@@ -296,7 +295,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def phase_action(self):
         # Open retrieval window
-        self.win_ret.createWin()
+        self.win_ret.create_win()
         # Call retrieval parameters
         pixels = self.par.param('Phase Retrieval').child('prepFROG Size').value()
         gtol = self.par.param('Phase Retrieval').child('G Tolerance').value()
@@ -308,10 +307,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.phase_thread.finished.connect(self.phase_thread.deleteLater)
         self.phase_thread.finished.connect(self.del_pthread)
         # Connect signals
-        self.phase_thread.sig_retdata.connect(self.win_ret.updateGraphics)
-        self.phase_thread.sig_retlabels.connect(self.win_ret.updateLabels)
-        self.phase_thread.sig_rettitles.connect(self.win_ret.updateTitle)
-        self.phase_thread.sig_retaxis.connect(self.win_ret.setAxis)
+        self.phase_thread.sig_retdata.connect(self.win_ret.update_graphics)
+        self.phase_thread.sig_retlabels.connect(self.win_ret.update_labels)
+        self.phase_thread.sig_rettitles.connect(self.win_ret.update_title)
+        self.phase_thread.sig_retaxis.connect(self.win_ret.set_axis)
         # Run phase retrieval
         self.phase_thread.start()
 
@@ -344,7 +343,7 @@ class FrogGraphics:
         self.plot2 = pg.ImageItem()
         vb_full.addItem(self.plot2)
 
-    def updateGraphics(self,plot_num,data):
+    def update_graphics(self,plot_num,data):
         if plot_num==1:
             self.plot1.setData(np.sum(data,0))
         if plot_num==3:

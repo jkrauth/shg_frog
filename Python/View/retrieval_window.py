@@ -17,7 +17,7 @@ class RetrievalGraphics:
     def __init__(self):
         pass
 
-    def createWin(self):
+    def create_win(self):
         """
         Creates the window
         """
@@ -66,7 +66,7 @@ class RetrievalGraphics:
 
 
     #@pyqtSlot(np.ndarray,np.ndarray)
-    def setAxis(self,tpxls,vpxls):
+    def set_axis(self,tpxls,vpxls):
         """
         Sets axis attributes which are needed for x and y scale
         """
@@ -87,10 +87,10 @@ class RetrievalGraphics:
 
 
     #@pyqtSlot(int,np.ndarray)
-    def updateGraphics(self,which,data):
+    def update_graphics(self,which,data):
         """
         Can only be used after window has been created and
-        axes set by method setAxis()
+        axes set by method set_axis()
         """
         if which==0: # Set original FROG trace
             self.img1.setImage(data)
@@ -107,7 +107,7 @@ class RetrievalGraphics:
 
 
     #@pyqtSlot(list)
-    def updateLabels(self,units):
+    def update_labels(self,units):
         dtunit = units[0]
         dvunit = units[1]
         self.p1.setLabel('bottom','Delay [%s]' % dtunit)
@@ -118,7 +118,7 @@ class RetrievalGraphics:
         self.p4.setLabel('bottom','Frequency [%s]' % dvunit)
 
     #@pyqtSlot(int,float)
-    def updateTitle(self,iteration,G):
+    def update_title(self,iteration,G):
         self.p2.setTitle(title='Reconstructed: iter=%d G=%.4f'
                          % (iteration,G))
 

@@ -17,7 +17,7 @@ class ROIGraphics:
         # Image will be filled with an image from the CCD
         #self.image = []
 
-    def createWin(self):
+    def create_win(self):
         """
         Creates the window
         """
