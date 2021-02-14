@@ -109,7 +109,7 @@ class FROG:
             # Save Frog trace and measurement settings as instance attributes,
             # they are then available for save button of GUI.
             self.measured_trace = self.scale_pxl_values(frog_array)
-            self.used_settings = self.save_settings(step_size, max_meas)
+            self.used_settings = self.get_settings(step_size, max_meas)
             print("Measurement finished!")
 
     def scale_pxl_values(self, frog_array):
@@ -127,7 +127,7 @@ class FROG:
             # Maybe there is no scaling needed...
         return frog_array_scaled
 
-    def save_settings(self, step_size, step_num: int):
+    def get_settings(self, step_size, step_num: int):
         """Returns the settings of the last measurement as dictionary"""
         date = datetime.now().strftime('%Y-%m-%d')
         time = datetime.now().strftime('%H:%M:%S')
@@ -138,12 +138,11 @@ class FROG:
         settings = {
             'date': date,
             'time': time,
-            'center position': None,
+            'center position': self.parameters.par.param('Newport Stage').child('Offset').value(),
             'step size': step_size,
             'step number': step_num,
             'ccddt': ccddt,
             'ccddv': ccddv,
-
         }
         return settings
 
