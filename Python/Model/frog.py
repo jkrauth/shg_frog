@@ -8,8 +8,7 @@ Author: Julian Krauth
 Date created: 2019/12/02
 Python Version: 3.7
 """
-import os
-import sys
+import pathlib
 from time import sleep
 from datetime import datetime
 import numpy as np
@@ -17,30 +16,19 @@ import yaml
 
 from labdevices import newport
 
+from . import acquisition
+from . import phase_retrieval
 
-cur_dir = os.path.abspath(os.path.dirname(__file__))
-python_dir = os.path.join(cur_dir, "..", "..", "Python")
-sys.path.append(python_dir)
-config_dir = os.path.join(python_dir, "..", "Config")
-
-from Model import acquisition
-from Model import phase_retrieval
+MAIN_DIR = pathlib.Path(__file__).parents[2]
+CONFIG_DIR = MAIN_DIR / "Config" / 'config.yml'
+DATA_DIR = MAIN_DIR / "Data"
 
 SPEEDOFLIGHT = 299792458. #m/s
 
 class FROG:
     """Top level class for the FROG experiment definition."""
-    # Get defaults from config file
-    with open(config_dir + '/config.yml','r') as f:
-        CONFIG = yaml.load(f,Loader=yaml.FullLoader)
-    DEFAULTS = {
-        'center wavelength': CONFIG['center wavelength'],
-        'focal length': CONFIG['focal length'],
-        'grating': CONFIG['grating'],
-        'pixel size': CONFIG['pixel size'],
-    }
 
-    def __init__(self, test=True):
+    def __init__(self, test: bool=True):
         # Load the FROG devices (optional: virtual devices for testing)
         if test:
             self.stage = newport.SMC100DUMMY(port='/dev/ttyUSB0', dev_number=1)
@@ -48,30 +36,50 @@ class FROG:
             self.stage = newport.SMC100(port='/dev/ttyUSB0', dev_number=1)
         self.spect = acquisition.Spectrometer(test)
 
+        self._config = self._get_config()
+
         self.measured_trace = None
         self.used_settings = None
         self.stop_measure = False
 
         self.algo = phase_retrieval.PhaseRetrieval()
 
-    def initialize(self, mode=0):
+    def initialize(self, mode: int=0) -> None:
         """Connect to the devices."""
         self.stage.initialize()
         self.spect.initialize(mode)
 
+    def _get_config(self) -> dict:
+        """Get defaults from configuration file."""
+        with open(CONFIG_DIR, 'r') as f:
+            config = yaml.load(f, Loader=yaml.FullLoader)
+        return config
+
+    def get_data_path(self) -> pathlib.Path:
+        return DATA_DIR
+
+    def get_file_name(self) -> str:
+        return self._config['file name']
+
+    def get_image_suffix(self) -> str:
+        return self._config['image suffix']
+
+    def get_meta_suffix(self) -> str:
+        return self._config['meta suffix']
+
 
     def measure(self, sig_progress, sig_measure, start_pos, max_meas, step_size):
         """Carries out the measurement loop."""
-        # Delete previously measured trace from memory.
+        # Delete previously measured trace.
         self.measured_trace = None
         self.used_settings = None
         # Move stage to Start Position and wait for end of movement
-        self.stage.goto(start_pos)
+        self.stage.move_abs(start_pos)
         self.stage.wait_move_finish(1.)
         for i in range(max_meas):
             print("Loop...")
             # Move stage
-            self.stage.goto(start_pos+i*step_size)
+            self.stage.move_abs(start_pos+i*step_size)
             self.stage.wait_move_finish(0.2)
             # Record spectrum
             y = self.spect.get_spectrum()
@@ -136,7 +144,7 @@ class FROG:
         Needed for phase retrieval.
         """
         if self.spect.mode == 0: # for CCD camera
-            wlatcenter = self.DEFAULTS['center wavelength']
+            wlatcenter = self._config['center wavelength']
             # Wavelength step per pixel:
             # I assume that over the size of the CCD chip
             # (for small angles) the wavelength scale is linear
@@ -146,10 +154,10 @@ class FROG:
             # into a 1mrad range at the focal distance of the lens:
             # Grating spec: 0.81nm/mrad => 0.81nm/0.2mm (for a 200mm focal lens)
             # =>0.81nm/34.13pixels (for 5.86micron pixelsize)
-            mm_per_mrad = 1. * self.DEFAULTS['focal length'] / 1000.
-            pxls_per_mrad = mm_per_mrad/(self.DEFAULTS['pixel size'] \
+            mm_per_mrad = 1. * self._config['focal length'] / 1000.
+            pxls_per_mrad = mm_per_mrad/(self._config['pixel size'] \
                 /1000) # yields 34
-            nm_per_px = self.DEFAULTS['grating']/pxls_per_mrad # yields 0.0237nm
+            nm_per_px = self._config['grating']/pxls_per_mrad # yields 0.0237nm
             # Frequency step per pixel
             vperpxGHz = SPEEDOFLIGHT * (1/(wlatcenter) \
                 -1/(wlatcenter + nm_per_px)) # GHz

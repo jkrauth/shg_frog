@@ -10,7 +10,7 @@ Date created: 2019/12/02
 Python Version: 3.7
 """
 import sys
-import os
+import pathlib
 import yaml
 import numpy as np
 import imageio
@@ -19,13 +19,12 @@ from PyQt5 import QtWidgets, uic, QtCore, QtGui
 from pyqtgraph.parametertree import Parameter, ParameterTree
 import pyqtgraph as pg
 
-CUR_DIR = os.path.abspath(os.path.dirname(__file__))
-config_dir = os.path.join(CUR_DIR, "..", "..", "Config")
-sys.path.append(CUR_DIR)
+#CUR_DIR = pathlib.Path(__file__)
+#sys.path.append(CUR_DIR)
 
-import general_worker
-from roi_window import ROIGraphics
-from retrieval_window import RetrievalGraphics
+from . import general_worker
+from .roi_window import ROIGraphics
+from .retrieval_window import RetrievalGraphics
 
 class MainWindow(QtWidgets.QMainWindow):
     """This is the main window of the GUI for the FROG interface.
@@ -51,29 +50,23 @@ class MainWindow(QtWidgets.QMainWindow):
         },
     }
 
-    # Add defaults from config file
-    with open(config_dir + '/config.yml','r') as f:
-        CONFIG = yaml.load(f,Loader=yaml.FullLoader)
-    DEFAULTS['data folder'] = CONFIG['data folder']
-    DEFAULTS['file name'] = CONFIG['file name']
-    DEFAULTS['file type'] = CONFIG['file type']
 
-    def __init__(self, frog=None, parent=None, test=False):
+    def __init__(self, frog=None, parent=None, test: bool=False):
         super().__init__(parent)
 
         # The object which is connected to the window
         self.frog = frog
 
         # Loading the GUI created with QTdesigner
-        gui_path = os.path.dirname(__file__)
-        uic.loadUi(os.path.join(gui_path, 'GUI/main_window.ui'), self)
+        gui_path = pathlib.Path(__file__).parent / 'GUI'
+        uic.loadUi(gui_path / 'main_window.ui', self)
 
         # Change window title if running in test mode
         if test:
             self.setWindowTitle('SHG Frog (TEST)')
 
         # Set window icon
-        self.setWindowIcon(QtGui.QIcon(os.path.join(gui_path, 'GUI/icon.png')))
+        self.setWindowIcon(QtGui.QIcon(str(gui_path / 'icon.png')))
 
         # Timer used to update certain values with a fixed interval (Timer starts after connecting)
         self.update_timer = QtCore.QTimer()
@@ -158,7 +151,7 @@ class MainWindow(QtWidgets.QMainWindow):
         stage_par = self.par.param('Newport Stage')
         # Stage Position
         go_par = stage_par.child('GoTo')
-        go_par.sigValueChanged.connect(lambda param, val: self.frog.stage.goto(val))
+        go_par.sigValueChanged.connect(lambda param, val: self.frog.stage.move_abs(val))
 
     def tree_spect_actions(self):
         # Camera connections
@@ -251,26 +244,34 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             pass
 
+    def get_unique_path(self, directory: pathlib.Path, name_pattern: str):
+        counter = 0
+        while True:
+            counter += 1
+            path = directory / name_pattern.format(counter)
+            if not path.exists():
+                return counter, path
+
     def save_action(self):
         if self.frog.measured_trace is not None:
-            outfolder = self.DEFAULTS['data folder']
-            filename = self.DEFAULTS['file name']
-            filetype = self.DEFAULTS['file type']
-            if not os.path.exists(outfolder):
-                os.makedirs(outfolder)
-            filename_numbered = filename + "_{:03}"
-            save_path = outfolder + filename_numbered
-            file_num = 1
-            while os.path.exists(save_path.format(file_num) + filetype):
-                file_num += 1
+            outfolder = self.frog.get_data_path()
+            filename = self.frog.get_file_name()
+            imagetype = self.frog.get_image_suffix()
+            metatype = self.frog.get_meta_suffix()
+            image_pattern = filename + "_{:03d}" + imagetype
+            meta_pattern = filename + "_{:03d}" + metatype
+            file_num, unique_path = self.get_unique_path(outfolder, image_pattern)
+            if not unique_path.parent.exists():
+                unique_path.parent.mkdir(parents=True, exist_ok=True)
+
             pix_format = self.par.param('ALLIED VISION CCD').child('PixelFormat').value()
             if pix_format == 'Mono8':
                 bit_type = np.uint8
             elif pix_format == 'Mono12':
                 bit_type = np.uint16
             # Save matrix as image with numbered filename
-            imageio.imsave(save_path.format(file_num) + filetype, \
-                        self.frog.measured_trace.astype(bit_type))
+            imageio.imsave(unique_path, \
+                self.frog.measured_trace.astype(bit_type))
             # Save settings
             # Get settings from frog instance
             settings = self.frog.used_settings
@@ -279,7 +280,8 @@ class MainWindow(QtWidgets.QMainWindow):
             settings['center position'] = self.par.param('Newport Stage').child('Offset').value()
             # maybe add possibility to add a comment: settings['comment'] =
             # Create yaml settings file to the measurement, with numbered name
-            with open('%s.yml' % (save_path.format(file_num)), 'w') as f:
+
+            with open(unique_path.parent / meta_pattern.format(file_num), 'w') as f:
                 f.write(yaml.dump(settings, default_flow_style=False))
             print('Measurement and settings saved!')
         else:
@@ -328,11 +330,9 @@ class FrogParams:
     """
     Class which implements the parameters used by the parametertree widget.
     """
-    # Load defaults:
-    with open(config_dir + '/config.yml','r') as f:
-        CONFIG = yaml.load(f,Loader=yaml.FullLoader)
-    DEFAULTS = {'maxW': CONFIG['pxls width'],
-                'maxH': CONFIG['pxls height'],
+    # Should be loaded from config file and not be hard coded
+    DEFAULTS = {'maxW': 1936,
+                'maxH': 1216,
     }
 
     def __init__(self):
@@ -385,14 +385,12 @@ class FrogParams:
              ]},
             {'name':'Newport Stage','type':'group','visible':False,
              'children': [
-                 {'name':'Position','type':'float','value': 0., 'readonly': True},
-                 {'name':'GoTo','type':'float','value': 0.},
-                 {'name':'Offset','type':'float','value': 11370,
-                  'limits':[0,25000]},
-                 {'name':'Start Position','type':'float','value': -256},
-                 {'name':'Step Size','type':'float','value': 4.},
-                 {'name':'Number of steps','type':'int','readonly':True,
-                  'value': 128}
+                 {'name':'Position', 'type':'float', 'value': 0., 'readonly': True},
+                 {'name':'GoTo', 'type':'float', 'value': 0.},
+                 {'name':'Offset', 'type':'float', 'value': 11370, 'limits':[0,25000]},
+                 {'name':'Start Position', 'type':'float', 'value': -256},
+                 {'name':'Step Size', 'type':'float', 'value': 4.},
+                 {'name':'Number of steps', 'type':'int', 'readonly':True, 'value': 128}
              ]}
         ]
 
@@ -524,10 +522,6 @@ class FrogParams:
             print('  data:      %s'% str(data))
             print('  ----------')
 
-    """ End FrogParams class """
-
-
-
 
 class FrogGraphics:
     """
@@ -558,6 +552,3 @@ class FrogGraphics:
         if plot_num==2:
             data = np.flipud(data)
             self.plot2.setImage(data)
-
-    """ End FROG graphics class """
-
