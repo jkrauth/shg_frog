@@ -19,7 +19,7 @@ class Spectrometer:
     """This class defines the model for the Spectrometer."""
     mode = None # Is set upon initialization
 
-    def __init__(self, test=True):
+    def __init__(self, test: bool=True):
         if test:
             self.ando = ANDO.SpectrumAnalyzerDummy()
             self.camera = allied_vision.MantaDummy()
@@ -27,8 +27,11 @@ class Spectrometer:
             self.ando = ANDO.SpectrumAnalyzer()
             self.camera = allied_vision.Manta(camera_id='DEV_000F314E1E59')
 
-    def initialize(self, mode):
-        """Connect to the device."""
+    def initialize(self, mode: int) -> None:
+        """Connect to the device.
+        Argument:
+        mode - 0 for camera, 1 for ando
+        """
         if mode == 0:
             self.camera.initialize()
         elif mode == 1:
