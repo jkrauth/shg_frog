@@ -42,15 +42,15 @@ class Spectrometer:
         """Get spectrum from Ando Spectrometer"""
         self.ando.sweep()
         self.ando.finish()
-        y = self.ando.get_y_data()
-        return y
+        y_data = self.ando.get_y_data()
+        return y_data
 
     def get_camera_spectrum(self):
         """Get spectrum from ccd camera"""
         img = self.camera.take_single_img()
         # Project image onto a single axis and normalize
-        y = np.divide(np.sum(img,0), float(np.ma.size(img,0)))
-        return y
+        y_data = np.divide(np.sum(img,0), float(np.ma.size(img,0)))
+        return y_data
 
     def get_spectrum(self):
         """Get spectrum from the connected device (ando or ccd)"""
