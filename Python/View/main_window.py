@@ -8,9 +8,9 @@ Date created: 2019/12/02
 Python Version: 3.7
 """
 import pathlib
-import yaml
+#import yaml
 import numpy as np
-import imageio
+#import imageio
 
 from PyQt5 import QtWidgets, uic, QtCore, QtGui
 from pyqtgraph.parametertree import ParameterTree
@@ -196,11 +196,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @QtCore.pyqtSlot(bool)
     def measure_action(self, checked):
+        """Executed when measure/stop button is pressed"""
         btn = self.DEFAULTS['btn_measure']
         self.btn_measure.setText(btn[checked])
         if checked:
             self.progress.setValue(0)
-            self.frog.stop_measure = False
             # Do actual measurement loop (in separate thread)
             self.start_measure()
         if not checked:
@@ -210,16 +210,13 @@ class MainWindow(QtWidgets.QMainWindow):
         """Retrieves measurement settings and wraps the measure function
         into a thread. Then the signals are implemented."""
         # Get settings
-        start_pos = self.par.param('Newport Stage').child('Start Position').value()
-        max_meas = self.par.param('Newport Stage').child('Number of steps').value()
-        step_size = self.par.param('Newport Stage').child('Step Size').value()
+
         # Create thread
-        self.measure_thread = general_worker.MeasureThread(self.frog.measure, \
-            start_pos, max_meas, step_size)
+        self.measure_thread = general_worker.MeasureThread(self.frog.measure)
         # Actions when measurement finishes
         self.measure_thread.finished.connect(self.measure_thread.deleteLater)
         self.measure_thread.finished.connect(self.del_mthread)
-        self.measure_thread.finished.connect(self.automatic_toggle)
+        self.measure_thread.finished.connect(self.uncheck_btn_measure)
         # Connect progress button with progress signal
         self.measure_thread.sig_progress.connect(self.modify_progress)
         # Connect plot update with measure signal
@@ -228,59 +225,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.measure_thread.start()
 
     def del_mthread(self):
-        """Delete measure_thread."""
         del self.measure_thread
 
-    def automatic_toggle(self):
-        """Toggles measurement button if measurement finished without manual stop."""
-        if not self.frog.stop_measure:
-            self.btn_measure.toggle()
-        else:
-            pass
-
-    @staticmethod
-    def get_unique_path(directory: pathlib.Path, name_pattern: str):
-        counter = 0
-        while True:
-            counter += 1
-            path = directory / name_pattern.format(counter)
-            if not path.exists():
-                return counter, path
+    def uncheck_btn_measure(self):
+        self.btn_measure.setChecked(False)
 
     def save_action(self):
-        if self.frog.measured_trace is not None:
-            outfolder = self.frog.get_data_path()
-            filename = self.frog.get_file_name()
-            imagetype = self.frog.get_image_suffix()
-            metatype = self.frog.get_meta_suffix()
-            image_pattern = filename + "_{:03d}" + imagetype
-            meta_pattern = filename + "_{:03d}" + metatype
-            file_num, unique_path = self.get_unique_path(outfolder, image_pattern)
-            if not unique_path.parent.exists():
-                unique_path.parent.mkdir(parents=True, exist_ok=True)
-
-            pix_format = self.par.param('ALLIED VISION CCD').child('PixelFormat').value()
-            if pix_format == 'Mono8':
-                bit_type = np.uint8
-            elif pix_format == 'Mono12':
-                bit_type = np.uint16
-            # Save matrix as image with numbered filename
-            imageio.imsave(unique_path, \
-                self.frog.measured_trace.astype(bit_type))
-            # Save settings
-            # Get settings from frog instance
-            settings = self.frog.used_settings
-            # Add additional information
-            settings['measurement number'] = file_num
-            # maybe add possibility to add a comment: settings['comment'] =
-            # Create yaml settings file to the measurement, with numbered name
-
-            with open(unique_path.parent / meta_pattern.format(file_num), 'w') as f:
-                f.write(yaml.dump(settings, default_flow_style=False))
-            print('Measurement and settings saved!')
-        else:
-            print('Do measurement first!')
-
+        self.frog.save_measurement_data()
 
     def update_values(self):
         """Used for values which are continuously updated using QTimer"""

@@ -1,8 +1,6 @@
 """
 Model for the FROG setup
 
-An example of how to run the code is found at the end of this file.
-
 File name: frog.py
 Author: Julian Krauth
 Date created: 2019/12/02
@@ -11,8 +9,10 @@ Python Version: 3.7
 import pathlib
 from time import sleep
 from datetime import datetime
+from collections import namedtuple
 import numpy as np
 import yaml
+import imageio
 from pyqtgraph.parametertree import Parameter
 
 from labdevices import newport
@@ -25,6 +25,8 @@ CONFIG_DIR = MAIN_DIR / "Config" / 'config.yml'
 DATA_DIR = MAIN_DIR / "Data"
 
 SPEEDOFLIGHT = 299792458. #m/s
+
+Data = namedtuple('Data', ['image', 'meta'])
 
 class FROG:
     """Top level class for the FROG experiment definition."""
@@ -43,8 +45,9 @@ class FROG:
 
         self._config = self._get_config()
 
-        self.measured_trace = None
-        self.used_settings = None
+        # Will contain the measurement data and settings
+        self.data = None
+
         self.stop_measure = False
 
         self.algo = phase_retrieval.PhaseRetrieval()
@@ -73,44 +76,68 @@ class FROG:
     def get_meta_suffix(self) -> str:
         return self._config['meta suffix']
 
-
-    def measure(self, sig_progress, sig_measure, \
-        start_pos: float, max_meas: int, step_size: float):
+    def measure(self, sig_progress, sig_measure):
         """Carries out the measurement loop."""
-
-        # Delete previously measured trace.
-        self.measured_trace = None
-        self.used_settings = None
+        # Get measurement settings
+        meta = self._get_settings()
+        # Delete possible previous measurement data.
+        self.data = None
         # Move stage to Start Position and wait for end of movement
-        self.stage.move_abs(start_pos)
+        self.stage.move_abs(meta['start position'])
         self.stage.wait_move_finish(1.)
-        for i in range(max_meas):
+        for i in range(meta['step number']):
             print("Loop...")
             # Move stage
-            self.stage.move_abs(start_pos+i*step_size)
+            self.stage.move_abs(meta['start position']+i*meta['step size'])
             self.stage.wait_move_finish(0.2)
             # Record spectrum
-            y = self.spect.get_spectrum()
+            y_data = self.spect.get_spectrum()
             # Create 2d frog-array to fill with data
             if i==0:
-                frog_array = np.zeros((len(y),max_meas))
+                frog_array = np.zeros((len(y_data), meta['step number']))
             # Stitch data together
-            frog_array[:,i] = y
+            frog_array[:,i] = y_data
             # Send data to plot
-            sig_measure.emit(3, y)
+            sig_measure.emit(3, y_data)
             sig_measure.emit(2, frog_array)
             sleep(0.2)
             sig_progress.emit(i+1)
             if self.stop_measure:
+                print("Measurement aborted, data discarded!")
                 break
-        if self.stop_measure:
-            print("Measurement aborted!")
-        else:
+        if not self.stop_measure:
             # Save Frog trace and measurement settings as instance attributes,
             # they are then available for save button of GUI.
-            self.measured_trace = self.scale_pxl_values(frog_array)
-            self.used_settings = self.get_settings(step_size, max_meas)
+            frog_trace = self.scale_pxl_values(frog_array)
+            # maybe add possibility to add a comment to the meta data at
+            # end of measurement.
+            self.data = Data(frog_trace, meta)
             print("Measurement finished!")
+        else:
+            self.stop_measure = False
+
+    def _get_settings(self) -> dict:
+        """Returns the settings for the current measurement as dictionary.
+        Everything listed here will be saved in the metadata .yml file."""
+        date = datetime.now().strftime('%Y-%m-%d')
+        time = datetime.now().strftime('%H:%M:%S')
+        step_size = self.parameters.get_step_size()
+        # Time step per pixel in ps
+        ccddt = 1e6*2*step_size/(SPEEDOFLIGHT)
+        ccddv = self.freq_step_per_pixel()
+        # in future maybe write also exposure time, gain, max Intensity, bit depth
+        settings = {
+            'date': date,
+            'time': time,
+            'center position': self.parameters.get_center_position(),
+            'start position': self.parameters.get_start_position(),
+            'step number': self.parameters.get_step_num(),
+            'bit depth': self.spect.camera.pix_format(),
+            'step size': step_size,
+            'ccddt': ccddt,
+            'ccddv': ccddv,
+        }
+        return settings
 
     def scale_pxl_values(self, frog_array):
         """Maximize contrast of the image"""
@@ -126,25 +153,6 @@ class FROG:
             raise Exception("scaling for ando not implemented yet.")
             # Maybe there is no scaling needed...
         return frog_array_scaled
-
-    def get_settings(self, step_size, step_num: int):
-        """Returns the settings of the last measurement as dictionary"""
-        date = datetime.now().strftime('%Y-%m-%d')
-        time = datetime.now().strftime('%H:%M:%S')
-        # Time step per pixel in ps
-        ccddt = 1e6*2*step_size/(SPEEDOFLIGHT)
-        ccddv = self.freq_step_per_pixel()
-        # in future maybe write also exposure time, gain, max Intensity, bit depth
-        settings = {
-            'date': date,
-            'time': time,
-            'center position': self.parameters.par.param('Newport Stage').child('Offset').value(),
-            'step size': step_size,
-            'step number': step_num,
-            'ccddt': ccddt,
-            'ccddv': ccddv,
-        }
-        return settings
 
     def freq_step_per_pixel(self):
         """Returns the frequency step per bin/pixel of the taken trace.
@@ -181,15 +189,50 @@ class FROG:
         self, sig_retdata, sig_retlabels, sig_rettitles, sig_retaxis,
         pixels, GTol, iterMAX):
         """Execute phase retrieval algorithm."""
-        if self.measured_trace is not None:
-            ccddt = self.used_settings['ccddt']
-            ccddv = self.used_settings['ccddv']
+        if self.data is not None:
+            ccddt = self.data.meta['ccddt']
+            ccddv = self.data.meta['ccddv']
             self.algo.prepFROG(ccddt=ccddt, ccddv=ccddv, N=pixels, \
-                ccdimg=self.measured_trace, flip=2)
+                ccdimg=self.data.image, flip=2)
             self.algo.retrievePhase(GTol=GTol, iterMAX=iterMAX, signal_data=sig_retdata, \
                 signal_label=sig_retlabels, signal_title=sig_rettitles, signal_axis=sig_retaxis)
         else:
             raise Exception('No recorded trace in buffer!')
+
+    def save_measurement_data(self):
+        if self.data is None:
+            print('No data saved, do a measurement first!')
+            return
+        # Create path for saving
+        outfolder = self.get_data_path()
+        filename = self.get_file_name()
+        imagetype = self.get_image_suffix()
+        metatype = self.get_meta_suffix()
+        image_pattern = filename + "_{:03d}" + imagetype
+        meta_pattern = filename + "_{:03d}" + metatype
+        # Create path with unique image name
+        file_num, unique_path = self.get_unique_path(outfolder, image_pattern)
+        if not unique_path.parent.exists():
+            unique_path.parent.mkdir(parents=True, exist_ok=True)
+        # Save matrix as image with numbered filename and correct bit depth
+        if self.data.meta['bit depth'] == 'Mono8':
+            bit_type = np.uint8
+        elif self.data.meta['bit depth'] == 'Mono12':
+            bit_type = np.uint16
+        imageio.imsave(unique_path, self.data.image.astype(bit_type))
+        # Save settings to .yml file
+        with open(unique_path.parent / meta_pattern.format(file_num), 'w') as f:
+            f.write(yaml.dump(self.data.meta, default_flow_style=False))
+        print('Measurement and settings saved!')
+
+    @staticmethod
+    def get_unique_path(directory: pathlib.Path, name_pattern: str):
+        counter = 0
+        while True:
+            counter += 1
+            path = directory / name_pattern.format(counter)
+            if not path.exists():
+                return counter, path
 
     def close(self):
         """Close connection with devices."""
@@ -205,6 +248,8 @@ class FrogParams:
 
     def __init__(self, sensor_width: int, sensor_height: int):
         """
+        The two arguments are needed to set the limits of the ROI
+        parameters correctly.
         Arguments:
         sensor_width -- pixels along horizontal
         sensor_height -- pixels along vertical
@@ -304,26 +349,19 @@ class FrogParams:
         start_par.sigValueChanged.connect(self.show_steps)
         step_par.sigValueChanged.connect(self.show_steps)
 
-    def get_sensor_size(self):
-        return self._sensor_width, self._sensor_height
-
     def set_crop_limits(self, param, changes):
-        maxW, maxH = self.get_sensor_size()
+        max_width, max_height = self.get_sensor_size()
         for param, change, data in changes:
             path = self.par.childPath(param)
             par = self.par.param(path[0]).child(path[1])
             if path[2]=='Width':
-                mx = maxW
-                par.child('Xpos').setLimits([0,mx-par.child(path[2]).value()])
-            if path[2]=='Height':
-                mx = maxH
-                par.child('Ypos').setLimits([0,mx-par.child(path[2]).value()])
-            if path[2]=='Xpos':
-                mx = maxW
-                par.child('Width').setLimits([1,mx-par.child(path[2]).value()])
-            if path[2]=='Ypos':
-                mx = maxH
-                par.child('Height').setLimits([1,mx-par.child(path[2]).value()])
+                par.child('Xpos').setLimits([0, max_width-par.child(path[2]).value()])
+            elif path[2]=='Height':
+                par.child('Ypos').setLimits([0, max_height-par.child(path[2]).value()])
+            elif path[2]=='Xpos':
+                par.child('Width').setLimits([1, max_width-par.child(path[2]).value()])
+            elif path[2]=='Ypos':
+                par.child('Height').setLimits([1, max_height-par.child(path[2]).value()])
 
     def get_crop_par(self):
         """ Get the crop parameters from parameter tree"""
@@ -400,8 +438,17 @@ class FrogParams:
             print('  ----------')
 
 
-if __name__ == "__main__":
+    def get_sensor_size(self) -> list():
+        return self._sensor_width, self._sensor_height
 
-    frog = FROG()
-    frog.initialize()
-    frog.close()
+    def get_start_position(self) -> float:
+        return self.par.param('Newport Stage').child('Start Position').value()
+
+    def get_step_num(self) -> int:
+        return self.par.param('Newport Stage').child('Number of steps').value()
+
+    def get_step_size(self) -> float:
+        return self.par.param('Newport Stage').child('Step Size').value()
+
+    def get_center_position(self) -> float:
+        return self.par.param('Newport Stage').child('Offset').value()
