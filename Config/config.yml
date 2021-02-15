@@ -3,7 +3,6 @@ camera id: DEV_000F314E1E59 # Necessary to select the camera
 pixel size: 5.86 # Given in micron
 pxls height: 1216 # Number of pixels in vertical
 pxls width: 1936 # Number of pixels in horizontal
-data folder: 'Data'
 file name: 'frog_meas'
 image suffix: '.tiff'
 meta suffix: '.yml'
