@@ -238,7 +238,12 @@ class MainWindow(QtWidgets.QMainWindow):
         data_dir = pathlib.Path(__file__).parents[2] / 'Data'
         load_dir = QtWidgets.QFileDialog.getExistingDirectory(self, \
             'Choose measurement directory', str(data_dir))
-        self.frog.load_measurement_data(pathlib.Path(load_dir), self.plot_class.update_graphics)
+        try:
+            plot_data = self.frog.load_measurement_data(pathlib.Path(load_dir))
+            self.plot_class.update_graphics(2, plot_data)
+        except FileNotFoundError:
+            print("Error: This directory does not contain the files " + \
+                "with the correct file names.")
 
     def update_values(self):
         """Used for values which are continuously updated using QTimer"""
@@ -296,9 +301,14 @@ class FrogGraphics:
         self.plot2 = pg.ImageItem()
         vb_full.addItem(self.plot2)
 
-    def update_graphics(self,plot_num,data):
-        if plot_num==1:
-            self.plot1.setData(np.sum(data,0))
+    def update_graphics(self, plot_num: int, data):
+        """ Update single Slice and FROG trace plots in main window
+        Arguments:
+        plot_num -- 1: Slice plot
+        plot_num -- 2: FROG plot
+         """
+        #if plot_num==1:
+        #    self.plot1.setData(np.sum(data,0))
         if plot_num==3:
             self.plot1.setData(data)
         if plot_num==2:
