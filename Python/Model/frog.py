@@ -7,7 +7,7 @@ Date created: 2019/12/02
 Python Version: 3.7
 """
 import pathlib
-from time import sleep
+from time import sleep, strftime
 from datetime import datetime
 from collections import namedtuple
 import numpy as np
@@ -43,10 +43,11 @@ class FROG:
             self.stage = newport.SMC100(port='/dev/ttyUSB0', dev_number=1)
         self.spect = acquisition.Spectrometer(test)
 
-        self._config = self._get_config()
+        self.files = FileHandler()
+        self._config = self.files.get_main_config()
 
         # Will contain the measurement data and settings
-        self.data = None
+        self._data = None
 
         self.stop_measure = False
 
@@ -58,30 +59,12 @@ class FROG:
         self.stage.initialize()
         self.spect.initialize(mode)
 
-    def _get_config(self) -> dict:
-        """Get defaults from configuration file."""
-        with open(CONFIG_DIR, 'r') as f:
-            config = yaml.load(f, Loader=yaml.FullLoader)
-        return config
-
-    def get_data_path(self) -> pathlib.Path:
-        return DATA_DIR
-
-    def get_file_name(self) -> str:
-        return self._config['file name']
-
-    def get_image_suffix(self) -> str:
-        return self._config['image suffix']
-
-    def get_meta_suffix(self) -> str:
-        return self._config['meta suffix']
-
     def measure(self, sig_progress, sig_measure):
         """Carries out the measurement loop."""
         # Get measurement settings
         meta = self._get_settings()
         # Delete possible previous measurement data.
-        self.data = None
+        self._data = None
         # Move stage to Start Position and wait for end of movement
         self.stage.move_abs(meta['start position'])
         self.stage.wait_move_finish(1.)
@@ -111,7 +94,7 @@ class FROG:
             frog_trace = self.scale_pxl_values(frog_array)
             # maybe add possibility to add a comment to the meta data at
             # end of measurement.
-            self.data = Data(frog_trace, meta)
+            self._data = Data(frog_trace, meta)
             print("Measurement finished!")
         else:
             self.stop_measure = False
@@ -185,54 +168,34 @@ class FROG:
             raise Exception("Calibration for ANDO spectrometer not yet implemented!")
         return vperpx
 
-    def retrieve_phase(
-        self, sig_retdata, sig_retlabels, sig_rettitles, sig_retaxis,
-        pixels, GTol, iterMAX):
+    def retrieve_phase(self, sig_retdata, sig_retlabels, sig_rettitles, sig_retaxis):
         """Execute phase retrieval algorithm."""
-        if self.data is not None:
-            ccddt = self.data.meta['ccddt']
-            ccddv = self.data.meta['ccddv']
+        if self._data is not None:
+            ccddt = self._data.meta['ccddt']
+            ccddv = self._data.meta['ccddv']
+            # the following should also get into meta data and be read from
+            # there. This will allow for loading files.
+            pixels = self.parameters.get_prep_frog_size()
+            gtol = self.parameters.get_error_tolerance()
+            itermax = self.parameters.get_max_iterations()
+
             self.algo.prepFROG(ccddt=ccddt, ccddv=ccddv, N=pixels, \
-                ccdimg=self.data.image, flip=2)
-            self.algo.retrievePhase(GTol=GTol, iterMAX=iterMAX, signal_data=sig_retdata, \
-                signal_label=sig_retlabels, signal_title=sig_rettitles, signal_axis=sig_retaxis)
+                ccdimg=self._data.image, flip=2)
+            self.algo.retrievePhase(GTol=gtol, iterMAX=itermax, \
+                signal_data=sig_retdata, signal_label=sig_retlabels, \
+                    signal_title=sig_rettitles, signal_axis=sig_retaxis)
         else:
             raise Exception('No recorded trace in buffer!')
 
     def save_measurement_data(self):
-        if self.data is None:
+        if self._data is None:
             print('No data saved, do a measurement first!')
             return
-        # Create path for saving
-        outfolder = self.get_data_path()
-        filename = self.get_file_name()
-        imagetype = self.get_image_suffix()
-        metatype = self.get_meta_suffix()
-        image_pattern = filename + "_{:03d}" + imagetype
-        meta_pattern = filename + "_{:03d}" + metatype
-        # Create path with unique image name
-        file_num, unique_path = self.get_unique_path(outfolder, image_pattern)
-        if not unique_path.parent.exists():
-            unique_path.parent.mkdir(parents=True, exist_ok=True)
-        # Save matrix as image with numbered filename and correct bit depth
-        if self.data.meta['bit depth'] == 'Mono8':
-            bit_type = np.uint8
-        elif self.data.meta['bit depth'] == 'Mono12':
-            bit_type = np.uint16
-        imageio.imsave(unique_path, self.data.image.astype(bit_type))
-        # Save settings to .yml file
-        with open(unique_path.parent / meta_pattern.format(file_num), 'w') as f:
-            f.write(yaml.dump(self.data.meta, default_flow_style=False))
-        print('Measurement and settings saved!')
+        self.files.save_new_measurement(self._data, self._config)
+        print('All data saved!')
 
-    @staticmethod
-    def get_unique_path(directory: pathlib.Path, name_pattern: str):
-        counter = 0
-        while True:
-            counter += 1
-            path = directory / name_pattern.format(counter)
-            if not path.exists():
-                return counter, path
+    def load_measurement_data(self, path):
+        self._data = self.files.load_measurement(path)
 
     def close(self):
         """Close connection with devices."""
@@ -452,3 +415,71 @@ class FrogParams:
 
     def get_center_position(self) -> float:
         return self.par.param('Newport Stage').child('Offset').value()
+
+    def get_prep_frog_size(self) -> int:
+        return self.par.param('Phase Retrieval').child('prepFROG Size').value()
+
+    def get_error_tolerance(self) -> int:
+        return self.par.param('Phase Retrieval').child('G Tolerance').value()
+
+    def get_max_iterations(self) -> int:
+        return self.par.param('Phase Retrieval').child('Max. Iterations').value()
+
+
+class FileHandler:
+    def __init__(self):
+        self.name_meta = 'meta.yml'
+        self.name_config = 'config.yml'
+        self.name_frog = 'frog.tiff'
+
+    def _get_new_measurement_path(self) -> pathlib.Path:
+        """Returns a path for the next measurement."""
+        today = strftime("%Y%m%d")
+        today_path = DATA_DIR / today
+        new_path = self.get_unique_path(today_path, 'measurement_{:03d}')
+        return new_path
+
+    def get_unique_path(self, directory: pathlib.Path, name_pattern: str) -> pathlib.Path:
+        counter = 0
+        while True:
+            counter += 1
+            path = directory / name_pattern.format(counter)
+            if not path.exists():
+                return path
+
+    def save_new_measurement(self, data, config):
+        """ Saves data and configuration into a new measurement folder """
+        # Get unique path for new measurement
+        measurement_path = self._get_new_measurement_path()
+        measurement_path.mkdir(parents=True)
+        # Save Frog image with correct bit depth
+        if data.meta['bit depth'] == 'Mono8':
+            bit_type = np.uint8
+        elif data.meta['bit depth'] == 'Mono12':
+            bit_type = np.uint16
+        imageio.imsave(measurement_path / self.name_frog, data.image.astype(bit_type))
+        # Save settings
+        with open(measurement_path / self.name_meta, 'w') as f:
+            f.write(yaml.dump(data.meta, default_flow_style=False))
+        # Save configuration
+        with open(measurement_path / self.name_config, 'w') as f:
+            f.write(yaml.dump(config, default_flow_style=False))
+
+    def get_main_config(self) -> dict:
+        """Get defaults from configuration file."""
+        with open(CONFIG_DIR, 'r') as f:
+            config = yaml.load(f, Loader=yaml.FullLoader)
+        return config
+
+    def load_measurement(self, measurement_path: pathlib.Path):
+        """ Get config, settings (meta), and image data of an old measurement. """
+        # Load settings
+        with open(measurement_path / self.name_meta, 'r') as f:
+            meta = yaml.load(f, Loader=yaml.FullLoader)
+        # Load frog image
+        frog_image = imageio.imread(measurement_path / self.name_frog)
+        data = Data(frog_image, meta)
+        # Load configuration
+        #with open(measurement_path / self.name_config, 'r') as f:
+        #    config = yaml.load(f, Loader=yaml.FullLoader)
+        return data

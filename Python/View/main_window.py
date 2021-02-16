@@ -8,9 +8,7 @@ Date created: 2019/12/02
 Python Version: 3.7
 """
 import pathlib
-#import yaml
 import numpy as np
-#import imageio
 
 from PyQt5 import QtWidgets, uic, QtCore, QtGui
 from pyqtgraph.parametertree import ParameterTree
@@ -247,13 +245,8 @@ class MainWindow(QtWidgets.QMainWindow):
     def phase_action(self):
         # Open retrieval window
         self.win_ret.create_win()
-        # Call retrieval parameters
-        pixels = self.par.param('Phase Retrieval').child('prepFROG Size').value()
-        gtol = self.par.param('Phase Retrieval').child('G Tolerance').value()
-        itermax = self.par.param('Phase Retrieval').child('Max. Iterations').value()
         # Create thread
-        self.phase_thread = general_worker.RetrievalThread(self.frog.retrieve_phase, \
-            pixels, gtol, itermax)
+        self.phase_thread = general_worker.RetrievalThread(self.frog.retrieve_phase)
         # Actions when retrieval finishes
         self.phase_thread.finished.connect(self.phase_thread.deleteLater)
         self.phase_thread.finished.connect(self.del_pthread)
