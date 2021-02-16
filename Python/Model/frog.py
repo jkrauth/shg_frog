@@ -9,7 +9,7 @@ Python Version: 3.7
 import pathlib
 from time import sleep, strftime
 from datetime import datetime
-from collections import namedtuple
+from typing import NamedTuple
 import numpy as np
 import yaml
 import imageio
@@ -21,12 +21,15 @@ from . import acquisition
 from . import phase_retrieval
 
 MAIN_DIR = pathlib.Path(__file__).parents[2]
-CONFIG_DIR = MAIN_DIR / "Config" / 'config.yml'
+CONFIG_DIR = MAIN_DIR / "Config"
 DATA_DIR = MAIN_DIR / "Data"
 
 SPEEDOFLIGHT = 299792458. #m/s
 
-Data = namedtuple('Data', ['image', 'meta'])
+class Data(NamedTuple):
+    """ Data structure to contain frog image and meta data """
+    image: np.ndarray
+    meta: dict
 
 class FROG:
     """Top level class for the FROG experiment definition."""
@@ -194,7 +197,7 @@ class FROG:
         print('All data saved!')
 
     def load_measurement_data(self, path):
-        self._data = self.files.load_measurement(path)
+        self._data = self.files.get_measurement_data(path)
 
     def close(self):
         """Close connection with devices."""
@@ -219,12 +222,16 @@ class FrogParams:
         # Define parameters for parametertree
         self._sensor_width = sensor_width
         self._sensor_height = sensor_height
+
+        # Define parameters and their properties
+        # For a list of possible options see here:
+        # https://pyqtgraph.readthedocs.io/en/latest/_modules/pyqtgraph/widgets/SpinBox.html
         params = [
             {'name':'Phase Retrieval', 'type':'group', 'visible':True, 'children': [
-                {'name':'prepFROG Size', 'type': 'int', 'value': 128},
-                {'name':'Seed', 'type': 'list', 'values': {"Random":0,"fromFile":1}, 'value':0},
-                {'name':'Max. Iterations', 'type': 'int', 'value': 200},
-                {'name':'G Tolerance', 'type': 'float', 'value': 0.001}
+                {'name':'prepFROG Size', 'type': 'int', 'value': 128, 'compactHeight': False},
+                {'name':'Seed', 'type': 'list', 'values': {"Random":0, "fromFile":1}, 'value':0},
+                {'name':'Max. Iterations', 'type': 'int', 'value': 200, 'compactHeight': False},
+                {'name':'G Tolerance', 'type': 'float', 'value': 0.001, 'compactHeight': False}
             ]},
             {'name':'ANDO Spectrometer', 'type':'group', 'visible':False, 'children': [
                 {'name':'Center', 'type': 'float', 'value': 390.},
@@ -235,15 +242,16 @@ class FrogParams:
             ]},
             {'name':'ALLIED VISION CCD', 'type':'group', 'visible':False, 'children': [
                 {'name':'Exposure', 'type': 'float', 'value': 0.036, 'dec': True, \
-                    'step': 1, 'siPrefix': True, 'suffix': 's'},
-                {'name':'Gain', 'type': 'float', 'value': 0, 'dec': False, 'step': 1},
+                    'step': 1, 'siPrefix': True, 'suffix': 's', 'compactHeight': False},
+                {'name':'Gain', 'type': 'float', 'value': 0, 'dec': False, 'step': 1,\
+                     'compactHeight': False},
                 {'name':'Crop Image', 'type': 'group', 'expanded':False, 'children': [
                     {'name':'Width','type':'int', \
-                        'value': 600,'limits':[1, sensor_width],'step': 2},
+                        'value': 600,'limits':[1, sensor_width],'step': 2, 'compactHeight': False},
                     {'name':'Height','type':'int', \
-                        'value': 10,'limits':[1, sensor_height],'step': 2},
-                    {'name':'Xpos','type':'int','value': 400,'step': 2},
-                    {'name':'Ypos','type':'int','value': 470,'step': 2}
+                        'value': 10,'limits':[1, sensor_height],'step': 2, 'compactHeight': False},
+                    {'name':'Xpos','type':'int','value': 400,'step': 2, 'compactHeight': False},
+                    {'name':'Ypos','type':'int','value': 470,'step': 2, 'compactHeight': False}
                 ]},
                 {'name':'Trigger', 'type': 'group', 'children': [
                     {'name':'Mode','type':'list','visible':False, \
@@ -265,11 +273,16 @@ class FrogParams:
                     }, 'value':'Mono8'},
                 ]},
             {'name':'Newport Stage', 'type':'group', 'visible':False, 'children': [
-                {'name':'Position', 'type':'float', 'value': 0., 'readonly': True},
-                {'name':'GoTo', 'type':'float', 'value': 0.},
-                {'name':'Offset', 'type':'float', 'value': 11370, 'limits':[0,25000]},
-                {'name':'Start Position', 'type':'float', 'value': -256},
-                {'name':'Step Size', 'type':'float', 'value': 4.},
+                {'name':'Position', 'type':'float', 'value': 0., 'readonly': True, \
+                    'suffix': 'um'},
+                {'name':'GoTo', 'type':'float', 'value': 0., 'suffix': 'um', \
+                    'compactHeight': False},
+                {'name':'Offset', 'type':'float', 'value': 11370, 'limits':[0,25000], \
+                    'suffix': 'um', 'compactHeight': False},
+                {'name':'Start Position', 'type':'float', 'value': -256, 'suffix': 'um', \
+                    'compactHeight': False},
+                {'name':'Step Size', 'type':'float', 'value': 4., 'suffix': 'um', \
+                    'compactHeight': False},
                 {'name':'Number of steps', 'type':'int', 'readonly':True, 'value': 128}
             ]}
         ]
@@ -446,7 +459,7 @@ class FileHandler:
             if not path.exists():
                 return path
 
-    def save_new_measurement(self, data, config):
+    def save_new_measurement(self, data: Data, config: dict):
         """ Saves data and configuration into a new measurement folder """
         # Get unique path for new measurement
         measurement_path = self._get_new_measurement_path()
@@ -466,11 +479,11 @@ class FileHandler:
 
     def get_main_config(self) -> dict:
         """Get defaults from configuration file."""
-        with open(CONFIG_DIR, 'r') as f:
+        with open(CONFIG_DIR / self.name_config, 'r') as f:
             config = yaml.load(f, Loader=yaml.FullLoader)
         return config
 
-    def load_measurement(self, measurement_path: pathlib.Path):
+    def get_measurement_data(self, measurement_path: pathlib.Path) -> Data:
         """ Get config, settings (meta), and image data of an old measurement. """
         # Load settings
         with open(measurement_path / self.name_meta, 'r') as f:
