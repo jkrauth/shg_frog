@@ -1,18 +1,16 @@
 """
-This script creates an instance of the frog module and hands it over
-to the GUI.
+
+*** The shg_frog software ***
 
 Usage:
-$ python start_frog.py <option>
+    shg_frog [-t]
 
-If option <option> = test is provided, the program is run with virtual devices.
+Options:
+    -t          run a dummy version, no devices, retrieval possible
 
-File name: start_frog.py
-Author: Julian Krauth
-Date created: 2019/12/02
-Python Version: 3.7
 """
 import sys
+from docopt import docopt
 from PyQt5.QtWidgets import QApplication
 
 from .Model.frog import FROG
@@ -20,11 +18,17 @@ from .View.main_window import MainWindow
 
 # Implement application execution options:
 # Running a test mode with virtual devices
-test_mode = 'test' in sys.argv
 
-experiment = FROG(test=test_mode)
+def main():
+    args = docopt(__doc__)
+    test_mode = bool(args['-t'])
 
-app = QApplication(sys.argv)
-m = MainWindow(frog=experiment, test=test_mode)
-m.show()
-app.exit(app.exec_())
+    experiment = FROG(test=test_mode)
+
+    app = QApplication(sys.argv)
+    m = MainWindow(frog=experiment, test=test_mode)
+    m.show()
+    app.exit(app.exec_())
+
+if __name__== "__main__":
+    main()
