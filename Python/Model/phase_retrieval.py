@@ -23,7 +23,7 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *********
 
-Julian Krauth tranlated the code from Matlab into Python for the use in the 
+Julian Krauth tranlated the code from Matlab into Python for the use in the
 shg_frog python package.
 
 File name: phase_retrieval.py
@@ -74,11 +74,11 @@ class PhaseRetrieval:
         self.N = N
 
         # Difference in delay between consecutive pixels
-        # of the starting image
+        # of the starting image in ps
         self.ccddt = 0.002
 
         # Difference in frequency between consecutive pixels
-        # of the starting image
+        # of the starting image in THz
         self.ccddv = 0.2
 
 
@@ -619,11 +619,11 @@ class PhaseRetrieval:
 
 
     def retrievePhase(self,
-                      Fm=None,   # Prep. Frog trace
+                      Fm=None,      # Prep. Frog trace
                       seed=None,    # Is usually given by a random func
-                      GTol=None,       # FROG error tolerance
-                      iterMAX=None,  # Maximum iterations of algorithm
-                      method=None, # Methods defined in makeFROG
+                      GTol=None,    # FROG error tolerance
+                      iterMAX=None, # Maximum iterations of algorithm
+                      method=None,  # Methods defined in makeFROG
                       mov=0,        # Updates while running?
                       dtperpx=None, # Will be set by prepFROG
                       units=None,
