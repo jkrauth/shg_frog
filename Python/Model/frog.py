@@ -64,6 +64,7 @@ class FROG:
 
     def measure(self, sig_progress, sig_measure):
         """Carries out the measurement loop."""
+        self.stop_measure = False
         # Get measurement settings
         meta = self._get_settings()
         # Delete possible previous measurement data.
@@ -90,17 +91,14 @@ class FROG:
             sig_progress.emit(i+1)
             if self.stop_measure:
                 print("Measurement aborted, data discarded!")
-                break
-        if not self.stop_measure:
-            # Save Frog trace and measurement settings as instance attributes,
-            # they are then available for save button of GUI.
-            frog_trace = self.scale_pxl_values(frog_array)
-            # maybe add possibility to add a comment to the meta data at
-            # end of measurement.
-            self._data = Data(frog_trace, meta)
-            print("Measurement finished!")
-        else:
-            self.stop_measure = False
+                return
+        # Save Frog trace and measurement settings as instance attributes,
+        # they are then available for save button of GUI.
+        frog_trace = self.scale_pxl_values(frog_array)
+        # maybe add possibility to add a comment to the meta data at
+        # end of measurement.
+        self._data = Data(frog_trace, meta)
+        print("Measurement finished!")
 
     def _get_settings(self) -> dict:
         """Returns the settings for the current measurement as dictionary.
@@ -110,6 +108,7 @@ class FROG:
         step_size = self.parameters.get_step_size()
         # Time step per pixel in ps
         ccddt = 1e6*2*step_size/(SPEEDOFLIGHT)
+        # Frequency step per pixel in THz
         ccddv = self.freq_step_per_pixel()
         # in future maybe write also exposure time, gain, max Intensity, bit depth
         settings = {
@@ -132,7 +131,7 @@ class FROG:
             pix_format = self.spect.camera.pix_format()
             if pix_format == 'Mono12':
                 factor = 2**4 # to scale from 12 bit to 16 bit
-                frog_array = factor * frog_array / np.amax(frog_array)
+                frog_array = factor * frog_array
         elif self.spect.mode == 1: # for ANDO
             raise Exception("scaling for ando not implemented yet.")
             # Maybe there is no scaling needed...
@@ -196,9 +195,10 @@ class FROG:
         self.files.save_new_measurement(self._data, self._config)
         print('All data saved!')
 
-    def load_measurement_data(self, path: pathlib.Path):
+    def load_measurement_data(self, path: pathlib.Path, update_callback):
         try:
             self._data = self.files.get_measurement_data(path)
+            update_callback(2, self._data.image)
         except FileNotFoundError:
             print("Error: This directory does not contain the files " + \
                 "with the correct file names.")
