@@ -76,7 +76,7 @@ class FROG:
             print("Loop...")
             # Move stage
             self.stage.move_abs(meta['start position']+i*meta['step size'])
-            self.stage.wait_move_finish(0.2)
+            self.stage.wait_move_finish(0.05)
             # Record spectrum
             y_data = self.spect.get_spectrum()
             # Create 2d frog-array to fill with data
@@ -87,7 +87,6 @@ class FROG:
             # Send data to plot
             sig_measure.emit(3, y_data)
             sig_measure.emit(2, frog_array)
-            sleep(0.2)
             sig_progress.emit(i+1)
             if self.stop_measure:
                 print("Measurement aborted, data discarded!")
