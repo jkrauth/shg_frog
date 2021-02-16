@@ -74,6 +74,9 @@ class MainWindow(QtWidgets.QMainWindow):
         # Save button
         self.btn_save.clicked.connect(self.save_action)
 
+        # Load button
+        self.btn_load.clicked.connect(self.load_action)
+
         # Create Parametertree from FrogParams class
         self.par_class = self.frog.parameters
         # Print changes of parameters throughout operation
@@ -231,6 +234,12 @@ class MainWindow(QtWidgets.QMainWindow):
     def save_action(self):
         self.frog.save_measurement_data()
 
+    def load_action(self):
+        data_dir = pathlib.Path(__file__).parents[2] / 'Data'
+        load_dir = QtWidgets.QFileDialog.getExistingDirectory(self, \
+            'Choose measurement directory', str(data_dir))
+        self.frog.load_measurement_data(pathlib.Path(load_dir))
+
     def update_values(self):
         """Used for values which are continuously updated using QTimer"""
         pos_par = self.par.param('Newport Stage').child('Position')
@@ -243,6 +252,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.progress.setValue(val)
 
     def phase_action(self):
+        if not self.frog.data_available:
+            print('Error: No data for phase retrieval found.')
+            return
         # Open retrieval window
         self.win_ret.create_win()
         # Create thread
@@ -261,9 +273,6 @@ class MainWindow(QtWidgets.QMainWindow):
     def del_pthread(self):
         """Delete phase retrieval thread"""
         del self.phase_thread
-
-
-
 
 
 class FrogGraphics:
