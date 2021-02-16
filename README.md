@@ -19,7 +19,7 @@ The main window:
 
 The phase retrieval window:
 
-![frog_gui_retrieval](./Python/View/GUI/frog_gui_retrieval.png | width=100)
+<img src="./Python/View/GUI/frog_gui_retrieval.png" width="900">
 
 ## Setting up
 
