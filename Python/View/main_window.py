@@ -238,7 +238,7 @@ class MainWindow(QtWidgets.QMainWindow):
         data_dir = pathlib.Path(__file__).parents[2] / 'Data'
         load_dir = QtWidgets.QFileDialog.getExistingDirectory(self, \
             'Choose measurement directory', str(data_dir))
-        self.frog.load_measurement_data(pathlib.Path(load_dir))
+        self.frog.load_measurement_data(pathlib.Path(load_dir), self.plot_class.update_graphics)
 
     def update_values(self):
         """Used for values which are continuously updated using QTimer"""
