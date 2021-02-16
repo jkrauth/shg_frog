@@ -122,27 +122,25 @@ class FROG:
         }
         return settings
 
-    def scale_pxl_values(self, frog_array):
-        """Maximize contrast of the image"""
+    def scale_pxl_values(self, frog_array: np.ndarray) -> np.ndarray:
+        """Scale Mono12 image to 16bit, else don't do anything."""
         if self.spect.mode == 0: # for ccd/cmos camera
             # Scale image according to bit depth
             pix_format = self.spect.camera.pix_format()
-            if pix_format == 'Mono8':
-                scale = 255.
-            elif pix_format == 'Mono12':
-                scale = 65535.
-            frog_array_scaled = np.rint(scale * frog_array / np.amax(frog_array)).astype(int)
+            if pix_format == 'Mono12':
+                factor = 2**4 # to scale from 12 bit to 16 bit
+                frog_array = factor * frog_array / np.amax(frog_array)
         elif self.spect.mode == 1: # for ANDO
             raise Exception("scaling for ando not implemented yet.")
             # Maybe there is no scaling needed...
-        return frog_array_scaled
+        return np.rint(frog_array).astype(int)
 
-    def freq_step_per_pixel(self):
+    def freq_step_per_pixel(self) -> float:
         """Returns the frequency step per bin/pixel of the taken trace.
         Needed for phase retrieval.
         """
         if self.spect.mode == 0: # for CCD camera
-            wlatcenter = self._config['center wavelength']
+            wl_at_center = self._config['center wavelength']
             # Wavelength step per pixel:
             # I assume that over the size of the CCD chip
             # (for small angles) the wavelength scale is linear
@@ -157,16 +155,16 @@ class FROG:
                 /1000) # yields 34
             nm_per_px = self._config['grating']/pxls_per_mrad # yields 0.0237nm
             # Frequency step per pixel
-            vperpxGHz = SPEEDOFLIGHT * (1/(wlatcenter) \
-                -1/(wlatcenter + nm_per_px)) # GHz
-            vperpx = vperpxGHz * 1.e-3 # THz
+            freq_per_px_GHz = SPEEDOFLIGHT * (1/(wl_at_center) \
+                -1/(wl_at_center + nm_per_px)) # GHz
+            freq_per_px = freq_per_px_GHz * 1.e-3 # THz
             # Also here I assume that for small angles the frequency can be
             # considered to be linear on the CCD plane.
 
         elif self.spect.mode == 1: # for ANDO spectrometer
             # One has to get that information from the ando settings.
             raise Exception("Calibration for ANDO spectrometer not yet implemented!")
-        return vperpx
+        return freq_per_px
 
     def retrieve_phase(self, sig_retdata, sig_retlabels, sig_rettitles, sig_retaxis):
         """Execute phase retrieval algorithm."""
@@ -188,6 +186,7 @@ class FROG:
             raise Exception('No recorded trace in buffer!')
 
     def save_measurement_data(self):
+        """ Saves Frog image, meta data, and the config file """
         if self._data is None:
             print('No data saved, do a measurement first!')
             return
