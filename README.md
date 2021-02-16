@@ -15,11 +15,11 @@ The code in this repository provides:
 
 The main window:
 
-![frog_gui_main](./Python/View/GUI/frog_gui_main.png)
+![frog_gui_main](./shg_frog/View/GUI/frog_gui_main.png)
 
 The phase retrieval window:
 
-<img src="./Python/View/GUI/frog_gui_retrieval.png" width="900">
+![frog_gui_retrieval](./shg_frog/View/GUI/frog_gui_retrieval.png)
 
 ## Setting up
 
@@ -27,32 +27,28 @@ tested with Python 3.7
 
 ### Software dependencies
 
-* the following python packages are needed:
-  * pyQt5
-  * pyQtGraph
-  * [labdevices](https://github.com/jkrauth/labdevices)
-  * matplotlib (for colormaps)
-  * pyYAML
-  * imageio
-* Install the [Vimba SDK](https://www.alliedvision.com/en/products/software.html) from Allied Vision
+* most of the dependencies are installed automatically with the pip command. Additionally you need to install
+  * [labdevices](https://github.com/jkrauth/labdevices) for the camera, stage, and spectrum analyzer
+  * [prologix-gpib-ethernet](https://github.com/nelsond/prologix-gpib-ethernet) for spectrum analyzer
+  * [Vimba SDK](https://www.alliedvision.com/en/products/software.html) from Allied Vision
 
 ### Download and start
 
 Download this repository and adapt the config.yml file in the `Config` folder to your setup.
 
-Make sure you have the dependencies installed and start by
+In the console go to the package directory and install the package by
 
 ```console
-python start_gui.py
+pip install .
 ```
 
-A testing mode can be used by
+Run it by
 
 ```console
-python start_gui.py test
+shg_frog [-h]
 ```
 
-Here one can load old measurement data or do some testing without real devices.
+Run [-h] for to see available options.
 
 ### Hardware
 
