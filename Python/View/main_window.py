@@ -25,7 +25,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     DEFAULTS = {
         'dev': {
-            0: 'ALLIED VISION CCD',
+            0: 'Camera',
             1: 'ANDO Spectrometer',
         },
         'btn_connect': {
@@ -131,26 +131,26 @@ class MainWindow(QtWidgets.QMainWindow):
         if checked:
             self.frog.initialize(index)
             self.par.param(dev[index]).show()
-            self.par.param('Newport Stage').show()
+            self.par.param('Stage').show()
             self.update_timer.start()
         else:
             self.update_timer.stop()
             self.frog.close()
             self.par.param(dev[index]).hide()
-            self.par.param('Newport Stage').hide()
+            self.par.param('Stage').hide()
         # needed for updating par tree in GUI
         self.parameter_tree.setParameters(self.par, showTop=False)
 
 
     def tree_stage_actions(self):
-        stage_par = self.par.param('Newport Stage')
+        stage_par = self.par.param('Stage')
         # Stage Position
         go_par = stage_par.child('GoTo')
         go_par.sigValueChanged.connect(lambda param, val: self.frog.stage.move_abs(val))
 
     def tree_spect_actions(self):
         # Camera connections
-        spect_par = self.par.param('ALLIED VISION CCD')
+        spect_par = self.par.param('Camera')
         expos_par = spect_par.child('Exposure')
         expos_par.sigValueChanged.connect(lambda param,val:self.frog.spect.exposure(val))
         gain_par = spect_par.child('Gain')
@@ -247,12 +247,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def update_values(self):
         """Used for values which are continuously updated using QTimer"""
-        pos_par = self.par.param('Newport Stage').child('Position')
+        pos_par = self.par.param('Stage').child('Position')
         pos_par.setValue(self.frog.stage.position)
 
     def modify_progress(self, iter_val):
         """For changing the progress bar, using an iteration value"""
-        max_val = self.par.param('Newport Stage').child('Number of steps').value()
+        max_val = self.par.param('Stage').child('Number of steps').value()
         val = int(100*(float(iter_val)/float(max_val)))
         self.progress.setValue(val)
 

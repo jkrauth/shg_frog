@@ -246,7 +246,7 @@ class FrogParams:
                 {'name':'Rep. time', 'type': 'float', 'value': 36},
                 {'name':'Sampling', 'type': 'int', 'value': 201}
             ]},
-            {'name':'ALLIED VISION CCD', 'type':'group', 'visible':False, 'children': [
+            {'name':'Camera', 'type':'group', 'visible':False, 'children': [
                 {'name':'Exposure', 'type': 'float', 'value': 0.036, 'dec': True, \
                     'step': 1, 'siPrefix': True, 'suffix': 's', 'compactHeight': False},
                 {'name':'Gain', 'type': 'float', 'value': 0, 'dec': False, 'step': 1,\
@@ -278,7 +278,7 @@ class FrogParams:
                         #'Mono12Packed':'Mono12Packed'
                     }, 'value':'Mono8'},
                 ]},
-            {'name':'Newport Stage', 'type':'group', 'visible':False, 'children': [
+            {'name':'Stage', 'type':'group', 'visible':False, 'children': [
                 {'name':'Position', 'type':'float', 'value': 0., 'readonly': True, \
                     'suffix': 'um'},
                 {'name':'GoTo', 'type':'float', 'value': 0., 'suffix': 'um', \
@@ -301,7 +301,7 @@ class FrogParams:
         ### Some settings regarding CCD parameters ###
         # Create limits for crop settings
 
-        crop_par = self.par.param('ALLIED VISION CCD').child('Crop Image')
+        crop_par = self.par.param('Camera').child('Crop Image')
         width_par = crop_par.child('Width')
         height_par = crop_par.child('Height')
         xpos_par = crop_par.child('Xpos')
@@ -313,7 +313,7 @@ class FrogParams:
         crop_par.sigTreeStateChanged.connect(self.set_crop_limits)
 
         ### Some settings regarding the Stage parameters ###
-        stage_par = self.par.param('Newport Stage')
+        stage_par = self.par.param('Stage')
         start_par = stage_par.child('Start Position')
         step_par = stage_par.child('Step Size')
         off_par = stage_par.child('Offset')
@@ -346,7 +346,7 @@ class FrogParams:
 
     def get_crop_par(self):
         """ Get the crop parameters from parameter tree"""
-        roi_par = self.par.param('ALLIED VISION CCD').child('Crop Image')
+        roi_par = self.par.param('Camera').child('Crop Image')
         xpos = roi_par.child('Xpos').value()
         ypos = roi_par.child('Ypos').value()
         width = roi_par.child('Width').value()
@@ -358,7 +358,7 @@ class FrogParams:
         pos = roi.pos()
         size = roi.size()
         # Update the CROP parameters regarding region of interest
-        roi_par = self.par.param('ALLIED VISION CCD').child('Crop Image')
+        roi_par = self.par.param('Camera').child('Crop Image')
         # Create even numbers. Odd numbers crash with some cameras
         # and make sure that offset and size stays in allowed range
         max_size = self.get_sensor_size()
@@ -378,23 +378,23 @@ class FrogParams:
         roi_par.child('Height').setValue(int(size[1]))
 
     def set_step_limits(self, param, val):
-        step_par = self.par.param('Newport Stage').child('Step Size')
+        step_par = self.par.param('Stage').child('Step Size')
         step_par.setLimits([0.2,abs(val)])
 
     def set_start_pos_limits(self, param, val):
-        start_pos = self.par.param('Newport Stage').child('Start Position')
+        start_pos = self.par.param('Stage').child('Start Position')
         start_pos.setLimits([-val,-0.2])
 
     def show_pos(self, val):
-        pos = self.par.param('Newport Stage').child('Position')
+        pos = self.par.param('Stage').child('Position')
         pos.setValue(val)
 
     def show_steps(self, dummy):
-        start_pos = self.par.param('Newport Stage').child('Start Position')
-        step_size = self.par.param('Newport Stage').child('Step Size')
+        start_pos = self.par.param('Stage').child('Start Position')
+        step_size = self.par.param('Stage').child('Step Size')
         val = int(round(2*abs(start_pos.value())/step_size.value()))
 
-        num = self.par.param('Newport Stage').child('Number of steps')
+        num = self.par.param('Stage').child('Number of steps')
         num.setValue(val)
 
     def print_par_changes(self, val: bool=True):
@@ -423,16 +423,16 @@ class FrogParams:
         return self._sensor_width, self._sensor_height
 
     def get_start_position(self) -> float:
-        return self.par.param('Newport Stage').child('Start Position').value()
+        return self.par.param('Stage').child('Start Position').value()
 
     def get_step_num(self) -> int:
-        return self.par.param('Newport Stage').child('Number of steps').value()
+        return self.par.param('Stage').child('Number of steps').value()
 
     def get_step_size(self) -> float:
-        return self.par.param('Newport Stage').child('Step Size').value()
+        return self.par.param('Stage').child('Step Size').value()
 
     def get_center_position(self) -> float:
-        return self.par.param('Newport Stage').child('Offset').value()
+        return self.par.param('Stage').child('Offset').value()
 
     def get_prep_frog_size(self) -> int:
         return self.par.param('Phase Retrieval').child('prepFROG Size').value()
