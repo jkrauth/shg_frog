@@ -7,7 +7,7 @@ Date created: 2019/12/02
 Python Version: 3.7
 """
 import pathlib
-from time import sleep, strftime
+from time import strftime
 from datetime import datetime
 from typing import NamedTuple
 import numpy as np
