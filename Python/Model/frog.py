@@ -194,13 +194,9 @@ class FROG:
         self.files.save_new_measurement(self._data, self._config)
         print('All data saved!')
 
-    def load_measurement_data(self, path: pathlib.Path, update_callback):
-        try:
-            self._data = self.files.get_measurement_data(path)
-            update_callback(2, self._data.image)
-        except FileNotFoundError:
-            print("Error: This directory does not contain the files " + \
-                "with the correct file names.")
+    def load_measurement_data(self, path: pathlib.Path) -> np.ndarray:
+        self._data = self.files.get_measurement_data(path)
+        return self._data.image
 
     @property
     def data_available(self) -> bool:
