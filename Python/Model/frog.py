@@ -172,10 +172,10 @@ class FROG:
     def retrieve_phase(self, sig_retdata, sig_retlabels, sig_rettitles, sig_retaxis):
         """Execute phase retrieval algorithm."""
         if self._data is not None:
+            # Get calibration from meta data
             ccddt = self._data.meta['ccddt']
             ccddv = self._data.meta['ccddv']
-            # the following should also get into meta data and be read from
-            # there. This will allow for loading files.
+            # Get settings for phase retrieval
             pixels = self.parameters.get_prep_frog_size()
             gtol = self.parameters.get_error_tolerance()
             itermax = self.parameters.get_max_iterations()
@@ -196,8 +196,19 @@ class FROG:
         self.files.save_new_measurement(self._data, self._config)
         print('All data saved!')
 
-    def load_measurement_data(self, path):
-        self._data = self.files.get_measurement_data(path)
+    def load_measurement_data(self, path: pathlib.Path):
+        try:
+            self._data = self.files.get_measurement_data(path)
+        except FileNotFoundError:
+            print("Error: This directory does not contain the files " + \
+                "with the correct file names.")
+
+    @property
+    def data_available(self) -> bool:
+        if self._data is None:
+            return False
+        else:
+            return True
 
     def close(self):
         """Close connection with devices."""
