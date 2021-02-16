@@ -22,7 +22,7 @@ The phase retrieval window:
 
 ![frog_gui_retrieval](./Python/View/GUI/frog_gui_retrieval.png)
 
-## Installation
+## Setting up
 
 tested with Python 3.7
 
@@ -39,13 +39,7 @@ tested with Python 3.7
 
 ### Download and start
 
-Clone the repo via
-
-```console
-git clone <link to this repo>
-```
-
-Adapt the config.yml file in the `Config` folder to your setup.
+Download this repository and adapt the config.yml file in the `Config` folder to your setup.
 
 Make sure you have the dependencies installed and start by
 
