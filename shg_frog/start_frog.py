@@ -15,8 +15,8 @@ Python Version: 3.7
 import sys
 from PyQt5.QtWidgets import QApplication
 
-from Python.Model.frog import FROG
-from Python.View.main_window import MainWindow
+from .Model.frog import FROG
+from .View.main_window import MainWindow
 
 # Implement application execution options:
 # Running a test mode with virtual devices
