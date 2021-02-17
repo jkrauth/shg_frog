@@ -20,3 +20,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
+
+The GP (general projections) phase retrieval algorithm in phase_retrieval.py is third-party software by 
+Steven Byrnes (2021). Frequency-resolved optical gating (FROG) (https://www.mathworks.com/matlabcentral/fileexchange/34986-frequency-resolved-optical-gating-frog), MATLAB Central File Exchange. Retrieved February 16, 2021.
+The license for the phase retrieval algorithm is attached to the file phase_retrieval.py
