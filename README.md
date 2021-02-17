@@ -1,3 +1,5 @@
+[![MIT licensed](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/jkrauth/shg_frog/blob/main/LICENSE)
+
 # shg_frog
 
 Software for measurement and characterization of ultra-fast laser pulses using the __SHG FROG__ technique.
@@ -27,10 +29,11 @@ tested with Python 3.7
 
 ### Software dependencies
 
-* most of the dependencies are installed automatically with the pip command. Additionally you need to install
+* most of the dependencies (pyqt5, pyqtgraph, pyyaml, matplotlib, imageio) are installed automatically with the pip command. Additionally you need to install
   * [labdevices](https://github.com/jkrauth/labdevices) for the camera, stage, and spectrum analyzer
   * [prologix-gpib-ethernet](https://github.com/nelsond/prologix-gpib-ethernet) for spectrum analyzer
   * [Vimba SDK](https://www.alliedvision.com/en/products/software.html) from Allied Vision
+* QtDesigner, in case you want to modify the GUI
 
 ### Download and start
 
