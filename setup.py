@@ -13,6 +13,9 @@ HERE = pathlib.Path(__file__).parent
 
 README = (HERE / 'README.md').read_text()
 
+with open(HERE / 'requirements.txt') as fh:
+    requirements = [line.strip() for line in fh]
+
 setup(
     name='shg_frog',
     version=__version__,
@@ -30,15 +33,7 @@ setup(
     ],
     packages=find_packages(),
     python_requires='>=3.7',
-    install_requires=[
-        'pyqt5',
-        'pyqtgraph',
-        'matplotlib',
-        'pyyaml',
-        'imageio',
-        'labdevices',
-        'docopt',
-    ],
+    install_requires=requirements,
     entry_points={
         'console_scripts': [
             'shg_frog = shg_frog.__main__:main',

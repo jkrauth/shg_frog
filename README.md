@@ -28,7 +28,6 @@ The phase retrieval window:
 ### Software dependencies
 
 * most of the dependencies (pyqt5, pyqtgraph, pyyaml, matplotlib, imageio) are installed automatically with the pip command. Additionally you need to install
-  * [prologix-gpib-ethernet](https://github.com/nelsond/prologix-gpib-ethernet) for spectrum analyzer
   * [Vimba SDK](https://www.alliedvision.com/en/products/software.html) from Allied Vision
 * QtDesigner, in case you want to modify the GUI
 
