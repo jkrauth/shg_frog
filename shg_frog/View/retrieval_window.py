@@ -10,58 +10,64 @@ import numpy as np
 import pyqtgraph as pg
 from matplotlib import cm
 
-class RetrievalGraphics:
+
+AMPTLITUDE_COLOR = (255, 0, 0)
+PHASE_COLOR = (0, 255, 0)
+AMPTLITUDE_LABEL = 'Amplitude'
+PHASE_LABEL = 'Phase'
+
+
+class RetrievalGraphics(pg.GraphicsLayoutWidget):
     """
-    Class which creates the graphics output window for the phase retrieval.
+    Class which defines the graphics output window for the phase retrieval.
     """
     def __init__(self):
-        pass
-
-    def create_win(self):
-        """
-        Creates the window
-        """
+        """ Set up everything """
+        super().__init__()
         # Create the window
-        self.win = pg.GraphicsWindow()
-        self.win.setWindowTitle('Phase Retrieval - SHG FROG')
-        self.win.setGeometry(400, 0, 1000, 1000)
-        #self.win.move(300,0)
-
+        self.setWindowTitle('Phase Retrieval - SHG FROG')
+        self.setGeometry(400, 0, 1000, 1000)
+        #self.move(300,0)
 
         # Add item to show original trace
-        self.p1 = self.win.addPlot(title='Orig. FROG trace')
+        self.p1 = self.addPlot(title='Orig. FROG trace')
         self.img1 = pg.ImageItem()
         self.p1.addItem(self.img1)
 
         # Add item to show retrieved trace
-        self.p2 = self.win.addPlot() # title is added later, will be dynamic
+        self.p2 = self.addPlot() # title is added later, will be dynamic
         self.img2 = pg.ImageItem()
         self.p2.addItem(self.img2)
         # Link scale/shift between plots p1 and p2
         self.p2.setXLink(self.p1)
         self.p2.setYLink(self.p1)
 
+        y_label = '|E|^2 & ang(E)'
         # Add item to show pulse in time domain
-        self.win.nextRow()
-        self.p3 = self.win.addPlot(colspan=2)
-        self.p3.setLabel('left','|E|^2 & ang(E)')
+        self.nextRow()
+        self.p3 = self.addPlot(colspan=2)
+        self.p3.setLabel('left', y_label)
         self.p3.addLegend()
 
         # Add item to show pulse in frequency domain
-        self.win.nextRow()
-        self.p4 = self.win.addPlot(colspan=2)
-        self.p4.setLabel('left','|E|^2 & ang(E)')
+        self.nextRow()
+        self.p4 = self.addPlot(colspan=2)
+        self.p4.setLabel('left', y_label)
         self.p4.addLegend()
         #self.p4.setXLink(self.p3)
         #self.p4.setYLink(self.p3)
 
         # Colormap for FROG images
-        self.set_colormap()
+        self.set_colormap('plasma')
 
 
-    def set_colormap(self):
-        """ Create a colormap for the FROG images """
-        colormap = cm.get_cmap("plasma")
+    def set_colormap(self, color_map_name: str):
+        """ Sets a colormap from matplotlib for the FROG images.
+        Arguments:
+        color_map_name -- str, name of one of the many color maps available
+                          from matplotlib.
+        """
+        colormap = cm.get_cmap(color_map_name)
         colormap._init()
         # Convert matplotlib colormap from 0-1 to 0-255 for Qt
         lut = (colormap._lut * 255).view(np.ndarray)
@@ -84,10 +90,10 @@ class RetrievalGraphics:
         self.img1.translate(-N/2,-N/2) # center axes
         self.img2.translate(-N/2,-N/2) # center axes
         # Create initial graphs for showing the retrieved pulse
-        self.p3p = self.p3.plot(tpxls, np.zeros(N), pen=(255, 0, 0), name='Amplitude')
-        self.p3p2= self.p3.plot(tpxls, np.zeros(N), pen=(0, 255, 0), name='Phase')
-        self.p4p = self.p4.plot(vpxls, np.zeros(N), pen=(255, 0, 0), name='Amplitude')
-        self.p4p2= self.p4.plot(vpxls, np.zeros(N), pen=(0, 255, 0), name='Phase')
+        self.p3p = self.p3.plot(tpxls, np.zeros(N), pen=AMPTLITUDE_COLOR, name=AMPTLITUDE_LABEL)
+        self.p3p2= self.p3.plot(tpxls, np.zeros(N), pen=PHASE_COLOR, name=PHASE_LABEL)
+        self.p4p2= self.p4.plot(vpxls, np.zeros(N), pen=AMPTLITUDE_COLOR, name=AMPTLITUDE_LABEL)
+        self.p4p = self.p4.plot(vpxls, np.zeros(N), pen=PHASE_COLOR, name=PHASE_LABEL)
 
 
     def update_graphics(self, which: int, data: np.ndarray):
@@ -120,10 +126,11 @@ class RetrievalGraphics:
         self.p3.setLabel('bottom', 'Time [%s]' % dtunit)
         self.p4.setLabel('bottom', 'Frequency [%s]' % dvunit)
 
-    #@pyqtSlot(int,float)
-    def update_title(self, iteration: int, G: float):
+
+    def update_title(self, iteration: int, tolerance: float):
         """ Update the title to set the current iteration and G values. """
-        self.p2.setTitle(title='Reconstructed: iter=%d G=%.4f' % (iteration,G))
+        self.p2.setTitle(title='Reconstructed: iter=%d G=%.4f' % (iteration, tolerance))
+
 
     def screenshot(self, widget):
         exporter = pg.exporters.ImageExporter(widget)

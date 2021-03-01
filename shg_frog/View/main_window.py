@@ -100,11 +100,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Create instance for region of interest (ROI) window
         # This window will be opened and closed by the class' methods
-        self.win_roi = ROIGraphics()
+        self.window_roi = ROIGraphics()
         self.btn_roi.clicked.connect(self.roi_action)
 
-        # Create phase retrieval window
-        self.win_ret = RetrievalGraphics()
+        # Attribute for phase retrieval window
+        self.window_retrieval = None
 
         # Phase retrieve button
         self.btn_phase.clicked.connect(self.phase_action)
@@ -182,17 +182,17 @@ class MainWindow(QtWidgets.QMainWindow):
     def roi_action(self):
         """Defines the actions when calling the ROI button"""
         # Create ROI window with a full image taken by the camera
-        self.win_roi.create_win()
-        self.win_roi.set_image(self.frog.spect.take_full_img())
+        self.window_roi.show()
+        self.window_roi.set_image(self.frog.spect.take_full_img())
         # Set the ROI frame according to the crop parameters in parameter tree
-        self.win_roi.update_ROI_frame(*self.par_class.get_crop_par())
+        self.window_roi.update_ROI_frame(*self.par_class.get_crop_par())
         # If ROI changes, update parameters, update_crop_param() makes sure that crop parameters
         # don't extend over edges of image. This means that the crop parameters which are set
         # can differ from the roi frame in the roi window. In a second step the roi frame is then
         # updated to reflect the actual crop parameters.
-        self.win_roi.roi.sigRegionChangeFinished.connect(self.par_class.update_crop_param)
+        self.window_roi.roi.sigRegionChangeFinished.connect(self.par_class.update_crop_param)
         self.par.sigTreeStateChanged.connect(\
-            lambda param,changes: self.win_roi.update_ROI_frame(*self.par_class.get_crop_par()))
+            lambda param,changes: self.window_roi.update_ROI_frame(*self.par_class.get_crop_par()))
 
 
     @QtCore.pyqtSlot(bool)
@@ -260,18 +260,21 @@ class MainWindow(QtWidgets.QMainWindow):
         if not self.frog.data_available:
             print('Error: No data for phase retrieval found.')
             return
-        # Open retrieval window
-        self.win_ret.create_win()
+        # Open retrieval window, if necessary close previous one to avoid warning.
+        if self.window_retrieval is not None:
+            self.window_retrieval.close()
+        self.window_retrieval = RetrievalGraphics()
+        self.window_retrieval.show()
         # Create thread
         self.phase_thread = general_worker.RetrievalThread(self.frog.retrieve_phase)
         # Actions when retrieval finishes
         self.phase_thread.finished.connect(self.phase_thread.deleteLater)
         self.phase_thread.finished.connect(self.del_pthread)
         # Connect signals
-        self.phase_thread.sig_retdata.connect(self.win_ret.update_graphics)
-        self.phase_thread.sig_retlabels.connect(self.win_ret.update_labels)
-        self.phase_thread.sig_rettitles.connect(self.win_ret.update_title)
-        self.phase_thread.sig_retaxis.connect(self.win_ret.set_axis)
+        self.phase_thread.sig_retdata.connect(self.window_retrieval.update_graphics)
+        self.phase_thread.sig_retlabels.connect(self.window_retrieval.update_labels)
+        self.phase_thread.sig_rettitles.connect(self.window_retrieval.update_title)
+        self.phase_thread.sig_retaxis.connect(self.window_retrieval.set_axis)
         # Run phase retrieval
         self.phase_thread.start()
 
