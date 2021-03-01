@@ -41,7 +41,7 @@ class FROG:
         """
         # Load the FROG devices (optional: virtual devices for testing)
         if test:
-            self.stage = newport.SMC100DUMMY(port='/dev/ttyUSB0', dev_number=1)
+            self.stage = newport.SMC100Dummy(port='/dev/ttyUSB0', dev_number=1)
         else:
             self.stage = newport.SMC100(port='/dev/ttyUSB0', dev_number=1)
         self.spect = acquisition.Spectrometer(test)
