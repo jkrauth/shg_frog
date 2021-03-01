@@ -34,9 +34,9 @@ setup(
     packages=find_packages(),
     python_requires='>=3.7',
     install_requires=requirements,
-    entry_points={
-        'console_scripts': [
-            'shg_frog = shg_frog.__main__:main',
-        ],
-    }
+    # entry_points={
+    #     'console_scripts': [
+    #         'shg_frog = shg_frog.__main__:main',
+    #     ],
+    # }
 )

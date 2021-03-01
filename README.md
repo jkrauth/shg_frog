@@ -44,7 +44,7 @@ pip install .
 Run it by
 
 ```console
-shg_frog [-h]
+python -m shg_frog [-h]
 ```
 
 Run [-h] for to see available options.
