@@ -120,7 +120,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # Get dropdown position
         index = self.dropdown.currentIndex()
         # Do GUI actions
-        self.dropdown.setEnabled(not checked)
+        # self.dropdown.setEnabled(not checked) # only use once ANDO implemented
         if index==0:
             self.btn_roi.setEnabled(checked)
         self.btn_connect.setText(btn[checked])
@@ -268,6 +268,8 @@ class MainWindow(QtWidgets.QMainWindow):
             return
         # Open retrieval window, if necessary close previous one to avoid warning.
         if self.window_retrieval is not None:
+            # This avoids a warning when you start a retrieval while the
+            # window is still open.
             self.window_retrieval.close()
         self.window_retrieval = RetrievalGraphics()
         self.window_retrieval.show()
@@ -287,6 +289,8 @@ class MainWindow(QtWidgets.QMainWindow):
     def del_pthread(self):
         """Delete phase retrieval thread"""
         del self.phase_thread
+        self.window_retrieval = None
+        print('Retrieval window closed!')
 
 
 class FrogGraphics(pg.GraphicsLayoutWidget):
@@ -314,7 +318,8 @@ class FrogGraphics(pg.GraphicsLayoutWidget):
         Arguments:
         plot_num -- 1: Slice plot
         plot_num -- 2: FROG plot
-         """
+        """
+        print(plot_num)
         #if plot_num==1:
         #    self.plot1.setData(np.sum(data,0))
         if plot_num==3:
