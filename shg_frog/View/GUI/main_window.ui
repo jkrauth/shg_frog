@@ -54,6 +54,9 @@
         </item>
         <item row="0" column="0">
          <widget class="QComboBox" name="dropdown">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
           <item>
            <property name="text">
             <string>Camera + Stage</string>
