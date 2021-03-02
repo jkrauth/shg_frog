@@ -94,8 +94,7 @@ class MainWindow(QtWidgets.QMainWindow):
         pg.setConfigOptions(imageAxisOrder='row-major')
 
         # Create the plot window
-        self.plot_class = FrogGraphics()
-        self.graphics_widget = self.plot_class.gw
+        self.graphics_widget = FrogGraphics()
         self.gridLayout_2.addWidget(self.graphics_widget,1,0,1,3)
 
         # Create instance for region of interest (ROI) window
@@ -210,8 +209,6 @@ class MainWindow(QtWidgets.QMainWindow):
     def start_measure(self):
         """Retrieves measurement settings and wraps the measure function
         into a thread. Then the signals are implemented."""
-        # Get settings
-
         # Create thread
         self.measure_thread = general_worker.MeasureThread(self.frog.measure)
         # Actions when measurement finishes
@@ -221,7 +218,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # Connect progress button with progress signal
         self.measure_thread.sig_progress.connect(self.modify_progress)
         # Connect plot update with measure signal
-        self.measure_thread.sig_measure.connect(self.plot_class.update_graphics)
+        self.measure_thread.sig_measure.connect(self.graphics_widget.update_graphics)
         # Run measurement
         self.measure_thread.start()
 
@@ -232,7 +229,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.btn_measure.setChecked(False)
 
     def save_action(self):
-        self.frog.save_measurement_data()
+        pass
+        # Ask user for a measurement comment
+
+        #self.frog.save_measurement_data(comment)
 
     def load_action(self):
         data_dir = pathlib.Path(__file__).parents[2] / 'Data'
@@ -240,7 +240,7 @@ class MainWindow(QtWidgets.QMainWindow):
             'Choose measurement directory', str(data_dir))
         try:
             plot_data = self.frog.load_measurement_data(pathlib.Path(load_dir))
-            self.plot_class.update_graphics(2, plot_data)
+            self.graphics_widget.update_graphics(2, plot_data)
         except FileNotFoundError:
             print("Error: This directory does not contain the files " + \
                 "with the correct file names.")
@@ -283,22 +283,21 @@ class MainWindow(QtWidgets.QMainWindow):
         del self.phase_thread
 
 
-class FrogGraphics:
+class FrogGraphics(pg.GraphicsLayoutWidget):
     """
     Class which implements the content for the graphics widget.
     It shows the recorded data and updates during measurement.
     """
     def __init__(self):
-
+        super().__init__()
         # Enable antialiasing for prettier plots
         pg.setConfigOptions(antialias=True)
 
-        self.gw = pg.GraphicsLayoutWidget()
-        pl = self.gw.addPlot(title='Single Slice')
+        pl = self.addPlot(title='Single Slice')
         pl.setLabel('bottom', "Frequency", units='AU')
         pl.setLabel('left', "Intensity", units='AU')
         self.plot1 = pl.plot()
-        vb_full = self.gw.addPlot(title='FROG Trace')
+        vb_full = self.addPlot(title='FROG Trace')
         vb_full.setLabel('bottom',"Time Delay", units='AU')
         vb_full.setLabel('left',"Frequency", units='AU')
         self.plot2 = pg.ImageItem()
@@ -317,3 +316,17 @@ class FrogGraphics:
         if plot_num==2:
             data = np.flipud(data)
             self.plot2.setImage(data)
+
+class CommentDialog(QtWidgets.QDialog):
+    """ For adding a comment when saving the measurement. """
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle('Add a comment (optional)')
+        dialog_layout = QtWidgets.QVBoxLayout()
+        form_layout = QtWidgets.QFormLayout()
+        form_layout.addRow('Name:', QtWidgets.QLineEdit())
+        dialog_layout.addLayout(form_layout)
+        buttons = QtWidgets.QDialogButtonBox()
+        buttons.setStandardButtons(QtWidgets.QDialogButtonBox.Cancel | QtWidgets.QDialogButtonBox.Ok)
+        dialog_layout.addWidget(buttons)
+        self.setLayout(dialog_layout)
