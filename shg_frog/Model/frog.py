@@ -116,10 +116,12 @@ class FROG:
             'center position': self.parameters.get_center_position(),
             'start position': self.parameters.get_start_position(),
             'step number': self.parameters.get_step_num(),
-            'bit depth': self.spect.camera.pix_format(),
+            'camera': self.spect.camera.camera_id,
+            'bit depth': self.spect.camera.pix_format,
             'step size': step_size,
             'ccddt': ccddt,
             'ccddv': ccddv,
+            'comment': '', # is added afterwards
         }
         return settings
 
@@ -127,7 +129,7 @@ class FROG:
         """Scale Mono12 image to 16bit, else don't do anything."""
         if self.spect.mode == 0: # for ccd/cmos camera
             # Scale image according to bit depth
-            pix_format = self.spect.camera.pix_format()
+            pix_format = self.spect.camera.pix_format
             if pix_format == 'Mono12':
                 factor = 2**4 # to scale from 12 bit to 16 bit
                 frog_array = factor * frog_array
@@ -186,11 +188,12 @@ class FROG:
         else:
             raise Exception('No recorded trace in buffer!')
 
-    def save_measurement_data(self):
+    def save_measurement_data(self, comment: str):
         """ Saves Frog image, meta data, and the config file """
         if self._data is None:
             print('No data saved, do a measurement first!')
             return
+        self._data.meta['comment'] = comment
         self.files.save_new_measurement(self._data, self._config)
         print('All data saved!')
 
@@ -466,7 +469,11 @@ class FileHandler:
                 return path
 
     def save_new_measurement(self, data: Data, config: dict):
-        """ Saves data and configuration into a new measurement folder """
+        """ Saves data and configuration into a new measurement folder
+        Arguments:
+        data -- data and metadata of a measurement
+        config -- configuration file data of the frog_software
+        """
         # Get unique path for new measurement
         measurement_path = self._get_new_measurement_path()
         measurement_path.mkdir(parents=True)
