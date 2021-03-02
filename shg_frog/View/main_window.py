@@ -229,12 +229,18 @@ class MainWindow(QtWidgets.QMainWindow):
         self.btn_measure.setChecked(False)
 
     def save_action(self):
-        pass
+        """ Open dialog to request a comment, then save the data. """
         # Ask user for a measurement comment
+        dialog = CommentDialog(self)
+        if dialog.exec():
+            comment = dialog.get_comment()
+            self.frog.save_measurement_data(comment)
+        else:
+            print('Data not saved.')
 
-        #self.frog.save_measurement_data(comment)
 
     def load_action(self):
+        """ Open dialog to choose a measurement data to load. """
         data_dir = pathlib.Path(__file__).parents[2] / 'Data'
         load_dir = QtWidgets.QFileDialog.getExistingDirectory(self, \
             'Choose measurement directory', str(data_dir))
@@ -319,14 +325,28 @@ class FrogGraphics(pg.GraphicsLayoutWidget):
 
 class CommentDialog(QtWidgets.QDialog):
     """ For adding a comment when saving the measurement. """
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent):
+        """ Setting up the window. """
+        super().__init__(parent=parent)
         self.setWindowTitle('Add a comment (optional)')
+        self.setFixedSize(300, 80)
         dialog_layout = QtWidgets.QVBoxLayout()
+
         form_layout = QtWidgets.QFormLayout()
-        form_layout.addRow('Name:', QtWidgets.QLineEdit())
+        self.comment = QtWidgets.QLineEdit()
+        form_layout.addRow('Name:', self.comment)
         dialog_layout.addLayout(form_layout)
-        buttons = QtWidgets.QDialogButtonBox()
-        buttons.setStandardButtons(QtWidgets.QDialogButtonBox.Cancel | QtWidgets.QDialogButtonBox.Ok)
-        dialog_layout.addWidget(buttons)
+
+        standard_buttons = QtWidgets.QDialogButtonBox.Cancel | QtWidgets.QDialogButtonBox.Ok
+        self.button_box = QtWidgets.QDialogButtonBox(standard_buttons)
+        self.button_box.accepted.connect(self.accept)
+        self.button_box.rejected.connect(self.reject)
+
+        #self.buttons.setStandardButtons(self.buttons)
+        dialog_layout.addWidget(self.button_box)
         self.setLayout(dialog_layout)
+
+
+    def get_comment(self) -> str:
+        """ Return the comment """
+        return self.comment.text()
