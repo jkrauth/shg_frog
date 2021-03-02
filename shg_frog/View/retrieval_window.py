@@ -11,8 +11,8 @@ import pyqtgraph as pg
 from matplotlib import cm
 
 
-AMPTLITUDE_COLOR = (255, 0, 0)
-PHASE_COLOR = (0, 255, 0)
+AMPTLITUDE_COLOR = (255, 178, 102)
+PHASE_COLOR = (102, 178, 255)
 AMPTLITUDE_LABEL = 'Amplitude'
 PHASE_LABEL = 'Phase'
 
@@ -92,8 +92,8 @@ class RetrievalGraphics(pg.GraphicsLayoutWidget):
         # Create initial graphs for showing the retrieved pulse
         self.p3p = self.p3.plot(tpxls, np.zeros(N), pen=AMPTLITUDE_COLOR, name=AMPTLITUDE_LABEL)
         self.p3p2= self.p3.plot(tpxls, np.zeros(N), pen=PHASE_COLOR, name=PHASE_LABEL)
-        self.p4p2= self.p4.plot(vpxls, np.zeros(N), pen=AMPTLITUDE_COLOR, name=AMPTLITUDE_LABEL)
-        self.p4p = self.p4.plot(vpxls, np.zeros(N), pen=PHASE_COLOR, name=PHASE_LABEL)
+        self.p4p= self.p4.plot(vpxls, np.zeros(N), pen=AMPTLITUDE_COLOR, name=AMPTLITUDE_LABEL)
+        self.p4p2 = self.p4.plot(vpxls, np.zeros(N), pen=PHASE_COLOR, name=PHASE_LABEL)
 
 
     def update_graphics(self, which: int, data: np.ndarray):
@@ -111,7 +111,7 @@ class RetrievalGraphics(pg.GraphicsLayoutWidget):
             self.p3p2.setData(self.tpxls, data)
         if which==4: # Set pulse freq amplitude
             self.p4p.setData(self.vpxls, data)
-        if which==5: # Set pulse time phase
+        if which==5: # Set pulse freq phase
             self.p4p2.setData(self.vpxls, data)
 
 
@@ -129,7 +129,7 @@ class RetrievalGraphics(pg.GraphicsLayoutWidget):
 
     def update_title(self, iteration: int, tolerance: float):
         """ Update the title to set the current iteration and G values. """
-        self.p2.setTitle(title='Reconstructed: iter=%d G=%.4f' % (iteration, tolerance))
+        self.p2.setTitle(title=f'Reconstructed: iter={iteration:3} G={tolerance:.4f}')
 
 
     def screenshot(self, widget):
