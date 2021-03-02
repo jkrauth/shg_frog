@@ -238,7 +238,7 @@ class FrogParams:
         params = [
             {'name':'Phase Retrieval', 'type':'group', 'visible':True, 'children': [
                 {'name':'prepFROG Size', 'type': 'int', 'value': 128, 'compactHeight': False},
-                {'name':'Seed', 'type': 'list', 'values': {"Random":0, "fromFile":1}, 'value':0},
+                # {'name':'Seed', 'type': 'list', 'values': {"Random":0, "fromFile":1}, 'value':0},
                 {'name':'Max. Iterations', 'type': 'int', 'value': 200, 'compactHeight': False},
                 {'name':'G Tolerance', 'type': 'float', 'value': 0.001, 'compactHeight': False}
             ]},
