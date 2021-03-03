@@ -14,7 +14,9 @@
 
 - set up automated testing
 - Add Docs with drawing of example hardware setup
-- Restructure for clear MVC pattern, currently controller is split into the other two.
+- Would it make sense to move from a MV pattern to MVC?
 - Subclass camera and Ando from a parent spectrometer class
-- Create parameter tree in a more elegant way
-- Should secondary windows become QDialogs? Maybe then no extra custom threads are needed?
+- Create parameter tree in a more elegant way, then one could also better include the 'save settings' point from above
+- The first time shg_frog is started, ask to enter config into a form and save that in .shg_frog/config.yml in home directory. Always check first if it exists, otherwise ask to give that info. Allow for loading defaults. Those have to be included inside the package with mainfest.in
+- Example and seed data also has to be inside the package in a data folder. At startup they should be put into a shg_frog_data folder in the home folder. Seeds should be saved in .shg_frog/seeds/...
+- Load measurement should then check if shg_frog_data/example or shg_frog_data/<date>/<measurement> exists, if so show open window of data directory.

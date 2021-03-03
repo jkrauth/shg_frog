@@ -166,7 +166,7 @@ class PhaseRetrieval:
 
 
 
-    def setSeed(self,seed_opt):
+    def setSeed(self, seed_opt: int):
         """
         Function has input 0 or 1:
         0: Seed will be a random Gaussian
