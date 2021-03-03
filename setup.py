@@ -19,7 +19,8 @@ with open(HERE / 'requirements.txt') as fh:
 setup(
     name='shg_frog',
     version=__version__,
-    description='Software for frequency-resolved optical gating measurements of ultra-fast laser pulses.',
+    description='Software for frequency-resolved optical gating ' \
+        'measurements of ultra-fast laser pulses.',
     long_description=README,
     url='https://github.com/jkrauth/shg_frog',
     author='Julian Krauth',
