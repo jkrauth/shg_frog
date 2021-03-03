@@ -14,29 +14,29 @@ import numpy as np
 from labdevices import ando as ANDO
 from labdevices import allied_vision
 
-
 class Spectrometer:
     """This class defines the model for the Spectrometer."""
-    mode = None # Is set upon initialization
 
     def __init__(self, test: bool=True):
         if test:
             self.ando = ANDO.SpectrumAnalyzerDummy()
-            self.camera = allied_vision.MantaDummy()
+            self.camera = allied_vision.MantaDummy(device_id='DEV_000F314E1E59')
         else:
             self.ando = ANDO.SpectrumAnalyzer()
-            self.camera = allied_vision.Manta(camera_id='DEV_000F314E1E59')
+            self.camera = allied_vision.Manta(device_id='DEV_000F314E1E59')
+        self.mode = None # Is set upon initialization
+
 
     def initialize(self, mode: int) -> None:
         """Connect to the device.
         Argument:
         mode - 0 for camera, 1 for ando
         """
+        self.mode = mode
         if mode == 0:
             self.camera.initialize()
         elif mode == 1:
             self.ando.initialize()
-        self.mode = mode
 
     def get_ando_spectrum(self):
         """Get spectrum from Ando Spectrometer"""
@@ -56,14 +56,15 @@ class Spectrometer:
         """Get spectrum from the connected device (ando or ccd)"""
         if self.mode == 0:
             return self.get_camera_spectrum()
-        if self.mode == 1:
+        else:
             return self.get_ando_spectrum()
 
     def close(self):
         """Close connection to device."""
+        print(self.mode)
         if self.mode == 0:
             self.camera.close()
-        elif self.mode == 1:
+        else:
             self.ando.close()
 
     def exposure(self, val=None):
@@ -108,15 +109,15 @@ class Spectrometer:
 
     def trig_source(self, source=None):
         if source is None:
-            return self.camera.trig_source()
+            return self.camera.trig_source
         else:
-            self.camera.trig_source(source)
+            self.camera.trig_source = source
 
     def pix_format(self, pix=None):
         if pix is None:
-            return self.camera.pix_format()
+            return self.camera.pix_format
         else:
-            self.camera.pix_format(pix)
+            self.camera.pix_format = pix
 
     def img_format_full(self):
         """Set image format to full size of camera sensor"""
