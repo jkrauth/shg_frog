@@ -20,10 +20,10 @@ class Spectrometer:
     def __init__(self, test: bool=True):
         if test:
             self.ando = ANDO.SpectrumAnalyzerDummy()
-            self.camera = allied_vision.MantaDummy(device_id='DEV_000F314E1E59')
+            self.camera = allied_vision.MantaDummy('DEV_000F314E1E59')
         else:
             self.ando = ANDO.SpectrumAnalyzer()
-            self.camera = allied_vision.Manta(device_id='DEV_000F314E1E59')
+            self.camera = allied_vision.Manta('DEV_000F314E1E59')
         self.mode = None # Is set upon initialization
 
 
