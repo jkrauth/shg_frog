@@ -4,4 +4,3 @@ Author: Julian Krauth
 Date created: 2019/02/22
 """
 __version__ = "0.1.0"
-
