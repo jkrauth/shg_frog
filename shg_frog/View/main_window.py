@@ -79,9 +79,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Create Parametertree from FrogParams class
         self.par_class = self.frog.parameters
-        # Print changes of parameters throughout operation
-        self.par_class.print_par_changes()
         self.par = self.par_class.par
+        self.print_changes(True)
         # Create ParameterTree widget filled with above parameters
         self.parameter_tree = ParameterTree()
         self.parameter_tree.setParameters(self.par, showTop=False)
@@ -108,6 +107,10 @@ class MainWindow(QtWidgets.QMainWindow):
         # Phase retrieve button
         self.btn_phase.clicked.connect(self.phase_action)
 
+    def print_changes(self, val: bool):
+        """ Control whether parameter changes are printed. """
+        self.par_class.print_par_changes(val)
+
 
     @QtCore.pyqtSlot(bool)
     def connect_action(self, checked):
@@ -118,7 +121,8 @@ class MainWindow(QtWidgets.QMainWindow):
         btn = self.DEFAULTS['btn_connect']
         col = self.DEFAULTS['btn_color']
         # Get dropdown position
-        index = self.dropdown.currentIndex()
+        # index = self.dropdown.currentIndex() # not used at the moment.
+        index = 0
         # Do GUI actions
         # self.dropdown.setEnabled(not checked) # only use once ANDO implemented
         if index==0:
