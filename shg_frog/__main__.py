@@ -13,14 +13,15 @@ import sys
 from docopt import docopt
 from PyQt5.QtWidgets import QApplication
 
-from .Model.frog import FROG
-from .View.main_window import MainWindow
+from .model.frog import FROG
+from .view.main_window import MainWindow
 
 # Implement application execution options:
 # Running a test mode with virtual devices
 
 def main():
     """ Loop for the main window of the shg_frog. """
+    # Read options and parameters
     args = docopt(__doc__)
     test_mode = bool(args['-t'])
     verbose = bool(args['-v'])
