@@ -1,5 +1,6 @@
 camera model: Manta G-234B NIR
 camera id: DEV_000F314E1E59 # Necessary to select the camera
+stage port: /dev/ttyUSB0
 pixel size: 5.86 # Given in micron
 pxls height: 1216 # Number of pixels in vertical
 pxls width: 1936 # Number of pixels in horizontal
