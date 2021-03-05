@@ -62,7 +62,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Timer used to update certain values with a fixed interval (Timer starts after connecting)
         self.update_timer = QtCore.QTimer()
-        self.update_timer.setInterval(500) # 1000ms = 1s
+        self.update_timer.setInterval(500) #ms
         self.update_timer.timeout.connect(self.update_values)
 
         # Connect button
@@ -84,10 +84,11 @@ class MainWindow(QtWidgets.QMainWindow):
         # Create ParameterTree widget filled with above parameters
         self.parameter_tree = ParameterTree()
         self.parameter_tree.setParameters(self.par, showTop=False)
-        self.gridLayout.addWidget(self.parameter_tree,1,0,1,2)
+        self.gridLayout.addWidget(self.parameter_tree, 1, 0, 1, 2)
         # Implement Actions for ParameterTree
         self.tree_stage_actions()
-        self.tree_spect_actions()
+        self.tree_camera_actions()
+        #  self.tree_ando_actions()
 
         # Interpret image data as row-major instead of col-major
         pg.setConfigOptions(imageAxisOrder='row-major')
@@ -101,8 +102,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.window_roi = ROIGraphics()
         self.btn_roi.clicked.connect(self.roi_action)
 
-        # Attribute for phase retrieval window
+        # Attribute for measurement thread
+        self.measure_thread = None
+
+        # Attribute for phase retrieval window and thread
         self.window_retrieval = None
+        self.phase_thread = None
 
         # Phase retrieve button
         self.btn_phase.clicked.connect(self.phase_action)
@@ -132,7 +137,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.btn_measure.setEnabled(checked)
         # Open device and respective branch of parameter tree
         if checked:
-            self.frog.initialize(index)
+            self.frog.initialize()
             self.par.param(dev[index]).show()
             self.par.param('Stage').show()
             self.update_timer.start()
@@ -149,29 +154,31 @@ class MainWindow(QtWidgets.QMainWindow):
         stage_par = self.par.param('Stage')
         # Stage Position
         go_par = stage_par.child('GoTo')
-        go_par.sigValueChanged.connect(lambda param, val: self.frog.stage.move_abs(val))
+        go_par.sigValueChanged.connect(lambda _, val: self.frog.stage.move_abs(val))
 
-    def tree_spect_actions(self):
-        # Camera connections
-        spect_par = self.par.param('Camera')
-        expos_par = spect_par.child('Exposure')
-        expos_par.sigValueChanged.connect(lambda param,val:self.frog.spect.exposure(val))
-        gain_par = spect_par.child('Gain')
-        gain_par.sigValueChanged.connect(lambda param,val:self.frog.spect.gain(val))
-        crop_par = spect_par.child('Crop Image')
+    def tree_camera_actions(self):
+        """ Connect camera functionality. """
+        camera_par = self.par.param('Camera')
+        expos_par = camera_par.child('Exposure')
+        expos_par.sigValueChanged.connect(lambda _, val: self.frog.camera.set_exposure(val))
+        gain_par = camera_par.child('Gain')
+        gain_par.sigValueChanged.connect(lambda _, val: self.frog.camera.set_gain(val))
+        crop_par = camera_par.child('Crop Image')
         crop_par.sigTreeStateChanged.connect(self.crop_action)
-        tsource_par = spect_par.child('Trigger').child('Source')
-        tsource_par.sigValueChanged.connect(lambda param,val:self.frog.spect.trig_source(val))
-        # ANDO Connections
-        spect_par = self.par.param('ANDO Spectrometer')
-        ctr_par = spect_par.child('Center')
-        ctr_par.sigValueChanged.connect(lambda param,val:self.frog.spect.ctr(val))
-        span_par = spect_par.child('Span')
-        span_par.sigValueChanged.connect(lambda param,val:self.frog.spect.span(val))
-        cw_par = spect_par.child('CW mode')
-        cw_par.sigValueChanged.connect(lambda param,val:self.frog.spect.cw_mode(val))
-        holdtime_par = spect_par.child('Rep. time')
-        holdtime_par.sigValueChanged.connect(lambda param,val:self.frog.spect.peak_hold_mode(val))
+        tsource_par = camera_par.child('Trigger').child('Source')
+        tsource_par.sigValueChanged.connect(lambda _, val: self.frog.camera.set_trig_source(val))
+
+    # def tree_ando_actions(self):
+    #     """ Connect ando functionality. """
+    #     ando_par = self.par.param('ANDO Spectrometer')
+    #     ctr_par = ando_par.child('Center')
+    #     ctr_par.sigValueChanged.connect(lambda param, val: self.frog.ando.ctr(val))
+    #     span_par = ando_par.child('Span')
+    #     span_par.sigValueChanged.connect(lambda param, val: self.frog.ando.span(val))
+    #     cw_par = ando_par.child('CW mode')
+    #     cw_par.sigValueChanged.connect(lambda param, val: self.frog.ando.cw_mode(val))
+    #     holdtime_par = ando_par.child('Rep. time')
+    #     holdtime_par.sigValueChanged.connect(lambda param, val:self.frog.ando.peak_hold_mode(val))
 
     def crop_action(self, param, changes):
         """Define what happens when changing the crop/roi parameters in the parameter tree"""
@@ -179,14 +186,14 @@ class MainWindow(QtWidgets.QMainWindow):
                 'Xpos':'offsetx','Ypos':'offsety'}
         for param, change, data in changes:
             if change=='value':
-                self.frog.spect.img_format(**{dictio[param.name()]:data})
+                self.frog.camera.img_format(**{dictio[param.name()]:data})
                 #print dict[param.name()], data
 
     def roi_action(self):
         """Defines the actions when calling the ROI button"""
         # Create ROI window with a full image taken by the camera
         self.window_roi.show()
-        self.window_roi.set_image(self.frog.spect.take_full_img())
+        self.window_roi.set_image(self.frog.camera.take_full_img())
         # Set the ROI frame according to the crop parameters in parameter tree
         self.window_roi.update_ROI_frame(*self.par_class.get_crop_par())
         # If ROI changes, update parameters, update_crop_param() makes sure that crop parameters
@@ -227,7 +234,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.measure_thread.start()
 
     def del_mthread(self):
-        del self.measure_thread
+        self.measure_thread = None
 
     def uncheck_btn_measure(self):
         self.btn_measure.setChecked(False)
@@ -247,7 +254,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """ Open dialog to choose a measurement data to load. """
         data_dir = pathlib.Path(__file__).parents[2] / 'Data'
         load_dir = QtWidgets.QFileDialog.getExistingDirectory(self, \
-            'Choose measurement directory', str(data_dir))
+            'Choose measurement folder', str(data_dir))
         try:
             plot_data = self.frog.load_measurement_data(pathlib.Path(load_dir))
             self.graphics_widget.update_graphics(2, plot_data)
@@ -292,8 +299,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def del_pthread(self):
         """Delete phase retrieval thread"""
-        del self.phase_thread
-        self.window_retrieval = None
+        self.phase_thread = None
         print('Retrieval window closed!')
 
 
@@ -331,6 +337,8 @@ class FrogGraphics(pg.GraphicsLayoutWidget):
         if plot_num==2:
             data = np.flipud(data)
             self.plot2.setImage(data)
+
+
 
 class CommentDialog(QtWidgets.QDialog):
     """ For adding a comment when saving the measurement. """
