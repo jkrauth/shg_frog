@@ -39,28 +39,39 @@ class FROG:
         Arguments:
         test -- whether to run with dummy devices for testing or not.
         """
-        # Load the FROG devices (optional: virtual devices for testing)
-        if test:
-            self.stage = newport.SMC100Dummy(port='/dev/ttyUSB0', dev_number=1)
-        else:
-            self.stage = newport.SMC100(port='/dev/ttyUSB0', dev_number=1)
-        self.spect = acquisition.Spectrometer(test)
-
         self.files = FileHandler()
         self._config = self.files.get_main_config()
+        stage_port = self._config['stage port']
+        camera_id = self._config['camera id']
+        # Load the FROG devices (optional: virtual devices for testing)
+        if test:
+            # Instantiate dummies
+            self.stage = newport.SMC100Dummy(port=stage_port, dev_number=1)
+            self.camera = acquisition.CameraDummy(camera_id)
+            #self.ando = acquisition.SpectrometerDummy(ip_addr='10.0.0.40', gpib=1)
+        else:
+            # Instantiate the real stuff
+            self.stage = newport.SMC100(port=stage_port, dev_number=1)
+            self.camera = acquisition.Camera(camera_id)
+            #self.ando = acquisition.Spectrometer(ip_addr='10.0.0.40', gpib=1)
 
         # Will contain the measurement data and settings
         self._data = None
-
         self.stop_measure = False
 
         self.algo = phase_retrieval.PhaseRetrieval()
         self.parameters = FrogParams(self._config['pxls width'], self._config['pxls height'])
 
-    def initialize(self, mode: int=0) -> None:
+    def initialize(self) -> None:
         """Connect to the devices."""
         self.stage.initialize()
-        self.spect.initialize(mode)
+        self.camera.initialize()
+
+    def close(self):
+        """Close connection with devices."""
+        self.stage.close()
+        self.camera.close()
+
 
     def measure(self, sig_progress, sig_measure):
         """Carries out the measurement loop."""
@@ -78,7 +89,7 @@ class FROG:
             self.stage.move_abs(meta['start position']+i*meta['step size'])
             self.stage.wait_move_finish(0.05)
             # Record spectrum
-            y_data = self.spect.get_spectrum()
+            y_data = self.camera.get_spectrum()
             # Create 2d frog-array to fill with data
             if i==0:
                 frog_array = np.zeros((len(y_data), meta['step number']))
@@ -116,8 +127,8 @@ class FROG:
             'center position': self.parameters.get_center_position(),
             'start position': self.parameters.get_start_position(),
             'step number': self.parameters.get_step_num(),
-            'camera': self.spect.camera.camera_id,
-            'bit depth': self.spect.camera.pix_format,
+            'camera': self.camera.camera_id,
+            'bit depth': self.camera.pix_format,
             'step size': step_size,
             'ccddt': ccddt,
             'ccddv': ccddv,
@@ -127,46 +138,38 @@ class FROG:
 
     def scale_pxl_values(self, frog_array: np.ndarray) -> np.ndarray:
         """Scale Mono12 image to 16bit, else don't do anything."""
-        if self.spect.mode == 0: # for ccd/cmos camera
-            # Scale image according to bit depth
-            pix_format = self.spect.camera.pix_format
-            if pix_format == 'Mono12':
-                factor = 2**4 # to scale from 12 bit to 16 bit
-                frog_array = factor * frog_array
-        elif self.spect.mode == 1: # for ANDO
-            raise Exception("scaling for ando not implemented yet.")
-            # Maybe there is no scaling needed...
+        # Scale image according to bit depth
+        if self.camera.pix_format == 'Mono12':
+            factor = 2**4 # to scale from 12 bit to 16 bit
+            frog_array *= factor
         return np.rint(frog_array).astype(int)
 
     def freq_step_per_pixel(self) -> float:
         """Returns the frequency step per bin/pixel of the taken trace.
         Needed for phase retrieval.
+        Returns:
+        float -- in THz
         """
-        if self.spect.mode == 0: # for CCD camera
-            wl_at_center = self._config['center wavelength']
-            # Wavelength step per pixel:
-            # I assume that over the size of the CCD chip
-            # (for small angles) the wavelength scale is linear
-            # The number is calculated using the wavelength spread per mrad
-            # specified for the grating.
-            # This is then divided by the number of pixels which fit
-            # into a 1mrad range at the focal distance of the lens:
-            # Grating spec: 0.81nm/mrad => 0.81nm/0.2mm (for a 200mm focal lens)
-            # =>0.81nm/34.13pixels (for 5.86micron pixelsize)
-            mm_per_mrad = 1. * self._config['focal length'] / 1000.
-            pxls_per_mrad = mm_per_mrad/(self._config['pixel size'] \
-                /1000) # yields 34
-            nm_per_px = self._config['grating']/pxls_per_mrad # yields 0.0237nm
-            # Frequency step per pixel
-            freq_per_px_GHz = SPEEDOFLIGHT * (1/(wl_at_center) \
-                -1/(wl_at_center + nm_per_px)) # GHz
-            freq_per_px = freq_per_px_GHz * 1.e-3 # THz
-            # Also here I assume that for small angles the frequency can be
-            # considered to be linear on the CCD plane.
-
-        elif self.spect.mode == 1: # for ANDO spectrometer
-            # One has to get that information from the ando settings.
-            raise Exception("Calibration for ANDO spectrometer not yet implemented!")
+        wl_at_center = self._config['center wavelength']
+        # Wavelength step per pixel:
+        # I assume that over the size of the CCD chip
+        # (for small angles) the wavelength scale is linear
+        # The number is calculated using the wavelength spread per mrad
+        # specified for the grating.
+        # This is then divided by the number of pixels which fit
+        # into a 1mrad range at the focal distance of the lens:
+        # Grating spec: 0.81nm/mrad => 0.81nm/0.2mm (for a 200mm focal lens)
+        # =>0.81nm/34.13pixels (for 5.86micron pixelsize)
+        mm_per_mrad = 1. * self._config['focal length'] / 1000.
+        pxls_per_mrad = mm_per_mrad/(self._config['pixel size'] \
+            /1000) # yields 34
+        nm_per_px = self._config['grating']/pxls_per_mrad # yields 0.0237nm
+        # Frequency step per pixel
+        freq_per_px_GHz = SPEEDOFLIGHT * (1/(wl_at_center) \
+            -1/(wl_at_center + nm_per_px)) # GHz
+        freq_per_px = freq_per_px_GHz * 1.e-3 # THz
+        # Also here I assume that for small angles the frequency can be
+        # considered to be linear on the CCD plane.
         return freq_per_px
 
     def retrieve_phase(self, sig_retdata, sig_retlabels, sig_rettitles, sig_retaxis):
@@ -198,20 +201,19 @@ class FROG:
         print('All data saved!')
 
     def load_measurement_data(self, path: pathlib.Path) -> np.ndarray:
+        """ Load data of an old measurement and save them in self._data.
+        Returns:
+        np.ndarray -- the FROG image."""
         self._data = self.files.get_measurement_data(path)
         return self._data.image
 
     @property
     def data_available(self) -> bool:
+        """ Check if measurement data are in memory. """
         if self._data is None:
             return False
-        else:
-            return True
+        return True
 
-    def close(self):
-        """Close connection with devices."""
-        self.stage.close()
-        self.spect.close()
 
 
 
@@ -448,6 +450,7 @@ class FrogParams:
 
 
 class FileHandler:
+    """ Saving and loading data into and from files. """
     def __init__(self):
         self.name_meta = 'meta.yml'
         self.name_config = 'config.yml'
@@ -460,7 +463,13 @@ class FileHandler:
         new_path = self.get_unique_path(today_path, 'measurement_{:03d}')
         return new_path
 
-    def get_unique_path(self, directory: pathlib.Path, name_pattern: str) -> pathlib.Path:
+    @staticmethod
+    def get_unique_path(directory: pathlib.Path, name_pattern: str) -> pathlib.Path:
+        """ Creates a unique path with a given pattern, using integer numbering.
+        Arguments:
+        directory -- pathlib.Path, path to where numbered folders should be
+        name_pattern -- str, name of the folder, containing the curly format brackets for numbering.
+        """
         counter = 0
         while True:
             counter += 1
