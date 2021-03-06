@@ -25,7 +25,7 @@ class RetrievalGraphics(pg.GraphicsLayoutWidget):
         """ Set up everything """
         super().__init__()
         # Create the window
-        self.setWindowTitle('Phase Retrieval - SHG FROG')
+        self.setWindowTitle('SHG FROG - Phase Retrieval')
         self.setGeometry(400, 0, 1000, 1000)
         #self.move(300,0)
 

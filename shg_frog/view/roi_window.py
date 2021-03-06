@@ -16,7 +16,7 @@ class ROIGraphics(pg.GraphicsLayoutWidget):
         """ Setting up everything """
         super().__init__()
         # Create the window
-        self.setWindowTitle('ROI - CCD')
+        self.setWindowTitle('SHG FROG - ROI')
         self.move(300,0)
 
         # Create two Viewboxes

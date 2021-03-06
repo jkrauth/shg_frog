@@ -55,10 +55,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Change window title if running in test mode
         if test:
-            self.setWindowTitle('SHG Frog (TEST)')
+            self.setWindowTitle('SHG FROG (test)')
 
         # Set window icon
         self.setWindowIcon(QtGui.QIcon(str(gui_path / 'icon.png')))
+
+        self.menu_exit.triggered.connect(self.close)
 
         # Timer used to update certain values with a fixed interval (Timer starts after connecting)
         self.update_timer = QtCore.QTimer()
@@ -277,6 +279,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.progress.setValue(val)
 
     def phase_action(self):
+        """ Create Retrieval window and start phase retrieval loop in separate thread. """
         if not self.frog.data_available:
             print('Error: No data for phase retrieval found.')
             return
