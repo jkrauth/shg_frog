@@ -1,3 +1,2 @@
-ccddt: 0.0029296875 # ps per px
-ccddv: 0.09765625   # THz per px
-
+ccddt: 0.002 # ps per px
+ccddv: 0.2   # THz per px
