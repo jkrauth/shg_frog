@@ -254,7 +254,10 @@ class MainWindow(QtWidgets.QMainWindow):
         """ Open dialog to choose a measurement data to load. """
         data_dir = pathlib.Path(__file__).parents[2] / 'Data'
         load_dir = QtWidgets.QFileDialog.getExistingDirectory(self, \
-            'Choose measurement folder', str(data_dir))
+            'Select measurement folder', str(data_dir))
+        # If user presses cancel, an empty string is returned.
+        if load_dir == "":
+            return
         try:
             plot_data = self.frog.load_measurement_data(pathlib.Path(load_dir))
             self.graphics_widget.update_graphics(2, plot_data)
@@ -326,12 +329,9 @@ class FrogGraphics(pg.GraphicsLayoutWidget):
     def update_graphics(self, plot_num: int, data):
         """ Update single Slice and FROG trace plots in main window
         Arguments:
-        plot_num -- 1: Slice plot
+        plot_num -- 3: Slice plot
         plot_num -- 2: FROG plot
         """
-        print(plot_num)
-        #if plot_num==1:
-        #    self.plot1.setData(np.sum(data,0))
         if plot_num==3:
             self.plot1.setData(data)
         if plot_num==2:
