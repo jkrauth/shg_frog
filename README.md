@@ -17,11 +17,11 @@ The code in this repository provides:
 
 The main window:
 
-![frog_gui_main](./shg_frog/View/GUI/frog_gui_main.png)
+![frog_gui_main](./shg_frog/view/GUI/frog_gui_main.png)
 
 The phase retrieval window:
 
-![frog_gui_retrieval](./shg_frog/View/GUI/frog_gui_retrieval.png)
+![frog_gui_retrieval](./shg_frog/view/GUI/frog_gui_retrieval.png)
 
 ## Setting up
 
