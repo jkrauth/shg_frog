@@ -204,6 +204,8 @@ class PhaseRetrieval:
         self.ccddv
         self.N
         """
+        print('Prepare FROG trace...')
+
         #if ccddt is None: ccddt = self.ccddt
         #if ccddv is None: ccddv = self.ccddv
         if N is None: N = self.N
@@ -237,9 +239,9 @@ class PhaseRetrieval:
         ccddtdv = ccddt * ccddv
 
         # Choose correct image orientation
-        if flip==1 or flip==3:
+        if flip in (1, 3):
             ccdimg = np.transpose(ccdimg)
-        if flip==2 or flip==3:
+        if flip in (2, 3):
             ccdimg = np.flipud(ccdimg)
 
         # Find the approximate center of the spot, by calculating an average
@@ -358,6 +360,7 @@ class PhaseRetrieval:
 
             fnlimg = fnlimg / fnlimgcount
             fnldt = ccddt * tpxpersample
+            #print(f'fnldt: {fnldt}  ccddt: {ccddt} tpxpersample: {tpxpersample}')
 
 
         #### Save results in corresponding attributes ####
@@ -386,10 +389,13 @@ class PhaseRetrieval:
             plt.show()
 
         if 0: # Save prepFROG image
-            fnlimg = fnlimg * 65536 / np.amax(fnlimg)
+            fnlimg = np.rint(fnlimg * 65535 / np.amax(fnlimg))
+            #fnlimg = fnlimg * 255 / np.amax(fnlimg)
             #print np.amax(fnlimg)
             fnlimg = np.asarray(fnlimg, dtype=np.uint16)
-            imageio.imsave(self.fp_name+self.ftype, fnlimg)
+            imageio.imsave('prep_frog.tiff', fnlimg)
+
+
 
 
 
@@ -399,6 +405,9 @@ class PhaseRetrieval:
         makeFROG: Reads in the (complex) electric field as a function of time,
         and computes the expected SHG-FROG trace.
         """
+
+
+
         N = len(Pt) # or: N = self.N
 
         if domain==0:
@@ -620,6 +629,9 @@ class PhaseRetrieval:
         Retrieves the phase using the prepared FROG trace Fm.
         This method makes use of makeFROG and prepFROG.
         """
+
+        print('Retrieve pulse...')
+
         if Fm is None:
             if int(np.sum(self.Fm)) != 0:
                 Fm = self.Fm
@@ -646,7 +658,7 @@ class PhaseRetrieval:
         if units is None:
             dtunit = self.units[0]
             dvunit = self.units[1]
-
+        print(f'prepFROG: dt: {dtperpx}{dtunit} dv: {dvperpx}{dvunit}')
 
         # x-axis labels for plots
         tpxls = np.arange(-dtperpx*(N-1)/2., dtperpx*N/2., dtperpx)
@@ -826,6 +838,7 @@ class PhaseRetrieval:
 
 
         self.Fr = Fr
+        print('Phase retrieval finished!')
 
 
         if __name__ == '__main__':
