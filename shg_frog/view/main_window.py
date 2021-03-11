@@ -114,6 +114,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # Phase retrieve button
         self.btn_phase.clicked.connect(self.phase_action)
 
+
     def print_changes(self, val: bool):
         """ Control whether parameter changes are printed. """
         self.par_class.print_par_changes(val)
@@ -306,7 +307,6 @@ class MainWindow(QtWidgets.QMainWindow):
     def del_pthread(self):
         """Delete phase retrieval thread"""
         self.phase_thread = None
-        print('Retrieval window closed!')
 
 
 class FrogGraphics(pg.GraphicsLayoutWidget):
