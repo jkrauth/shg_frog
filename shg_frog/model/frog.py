@@ -174,7 +174,7 @@ class FROG:
 
     def retrieve_phase(self, sig_retdata, sig_retlabels, sig_rettitles, sig_retaxis):
         """Execute phase retrieval algorithm."""
-        if self._data is not None:
+        if self.data_available:
             # Get calibration from meta data
             ccddt = self._data.meta['ccddt']
             ccddv = self._data.meta['ccddv']
@@ -305,7 +305,6 @@ class FrogParams:
 
         ### Some settings regarding CCD parameters ###
         # Create limits for crop settings
-
         crop_par = self.par.param('Camera').child('Crop Image')
         width_par = crop_par.child('Width')
         height_par = crop_par.child('Height')
