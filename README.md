@@ -1,6 +1,6 @@
-[![MIT licensed](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/jkrauth/shg_frog/blob/main/LICENSE)
-
 # shg_frog
+
+[![MIT licensed](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/jkrauth/shg_frog/blob/main/LICENSE)
 
 Software for measurement and characterization of ultra-fast laser pulses using the __SHG FROG__ technique.
 
