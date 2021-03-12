@@ -174,16 +174,14 @@ class FROG:
     def retrieve_phase(self, sig_retdata, sig_retlabels, sig_rettitles, sig_retaxis):
         """Execute phase retrieval algorithm."""
         if self.data_available:
-            # Get calibration from meta data
+            # Get data
             ccddt = self._data.meta['ccddt']
             ccddv = self._data.meta['ccddv']
-            # Get settings for phase retrieval
-            #pixels = self.parameters.get_prep_frog_size()
-            #gtol = self.parameters.get_error_tolerance()
-            #itermax = self.parameters.get_max_iterations()
-
+            data = self._data.image
+            # prepare FROG image
             self.algo.prepFROG(ccddt=ccddt, ccddv=ccddv, \
-                ccdimg=self._data.image, flip=2)
+                ccdimg=data, flip=2)
+            # Retrieve phase
             self.algo.retrievePhase(
                 signal_data=sig_retdata, signal_label=sig_retlabels, \
                     signal_title=sig_rettitles, signal_axis=sig_retaxis)
@@ -436,15 +434,6 @@ class FrogParams:
 
     def get_center_position(self) -> float:
         return self.par.param('Stage').child('Offset').value()
-
-    def get_prep_frog_size(self) -> int:
-        return self.par.param('Phase Retrieval').child('prepFROG Size').value()
-
-    def get_error_tolerance(self) -> int:
-        return self.par.param('Phase Retrieval').child('G Tolerance').value()
-
-    def get_max_iterations(self) -> int:
-        return self.par.param('Phase Retrieval').child('Max. Iterations').value()
 
 
 class FileHandler:
