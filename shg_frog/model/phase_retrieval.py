@@ -55,11 +55,11 @@ class PhaseRetrieval:
     """
     def __init__(
         self,
-        max_iter=200,
-        prep_size=128,
-        GTol=0.001,
-        folder='out_test/',
-        fm_name='frog_meas'):
+        max_iter: int=200,
+        prep_size: int=128,
+        GTol: float=0.001,
+        folder: str='out_test/',
+        fm_name: str='frog_meas'):
 
         # Names and type of FROG trace files
         self.ftype = '.tiff' # Use tiff, because of 16bit capabilities
@@ -185,12 +185,12 @@ class PhaseRetrieval:
 
     def prepFROG(
         self,
-        ccddt=None,
-        ccddv=None,
-        ccdimg=None,
-        showprogress=0,
-        showautocor=0,
-        flip=2):
+        ccddt: float=None,
+        ccddv: float=None,
+        ccdimg: np.ndarray=None,
+        showprogress: int=0,
+        showautocor: int=0,
+        flip: int=2):
         """
         prepFROG: Cleans, smooths, and downsamples data in preparation for
         running the FROG algorithm on it.
@@ -394,7 +394,7 @@ class PhaseRetrieval:
 
 
 
-    def makeFROG(self, Pt, domain=0, antialias=0):
+    def makeFROG(self, Pt: np.ndarray, domain: int=0, antialias: int=0):
         """
         makeFROG: Reads in the (complex) electric field as a function of time,
         and computes the expected SHG-FROG trace.
@@ -503,11 +503,11 @@ class PhaseRetrieval:
 
     def guessPulse(
         self,
-        EF,
-        lastPt,
-        domain=0,
-        antialias=0,
-        PowerOrSVD=0):
+        EF: np.ndarray,
+        lastPt: np.ndarray,
+        domain: int=0,
+        antialias: int=0,
+        PowerOrSVD: int=0):
         """
         guesspulse: Extracts the pulse as a function of time, starting with a FROG
         FIELD (i.e. complex amplitude), and the previous best-guess pulse. Uses
@@ -603,8 +603,8 @@ class PhaseRetrieval:
 
     def retrievePhase(self,
                       Fm=None,      # Prep. Frog trace
-                      mov=0,        # Updates while running?
-                      dtperpx=None, # Will be set by prepFROG
+                      mov: int=0,        # Updates while running?
+                      dtperpx: float=None, # Will be set by prepFROG
                       units=None,
                       signal_data=None,
                       signal_label=None,
