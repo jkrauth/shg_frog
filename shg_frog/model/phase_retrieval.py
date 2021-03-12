@@ -32,6 +32,7 @@ Date created: 2019/11/27
 Python Version: 3.7
 """
 
+import pathlib
 import numpy as np
 import imageio
 import yaml
@@ -41,7 +42,7 @@ import pyqtgraph as pg
 
 class PhaseRetrieval:
     """
-    This class has two main methods:
+    The two main methods of this class are:
     1. prepFROG(): Preparing the measured FROG trace
        to be used for the phase retrieval
     2. retrievePhase(): Uses the prepared FROG trace and retrieves
@@ -54,9 +55,9 @@ class PhaseRetrieval:
     """
     def __init__(
         self,
-        iterMAX=100,
-        N=128,
-        GTol=0.0,
+        max_iter=200,
+        prep_size=128,
+        GTol=0.001,
         folder='out_test/',
         fm_name='frog_meas'):
 
@@ -70,8 +71,8 @@ class PhaseRetrieval:
         ### Parameters used by prepFROG ###
 
         # Pixel number of preparated FROG trace, which will be used by
-        # phase retrieval algorithm
-        self.N = N
+        # phase retrieval algorithm, sometimes later also called N
+        self.prep_size = prep_size
 
         # Difference in delay between consecutive pixels
         # of the starting image in ps
@@ -100,14 +101,14 @@ class PhaseRetrieval:
         # Measured trace
         self.Fccd = None
         # Preparated trace, created by self.setPrepFrogTrace()
-        self.Fm = np.zeros((self.N,self.N)).astype(np.float64)
+        self.Fm = np.zeros((self.prep_size,self.prep_size)).astype(np.float64)
         # Reconstructed trace, created by self.retrievePhase()
         self.Fr = None
 
         ### Parameters used by retrievePhase method
 
         # Maximum number of iterations allowed
-        self.iterMAX = iterMAX
+        self.max_iter = max_iter
         # Initial guess for Pt. Default: None (Choose randomly)
         self.seed = None
         # Tolerance on the error
@@ -115,75 +116,70 @@ class PhaseRetrieval:
         # 0: No updates while solving. 1: Output movie. 2: Print text.
         self.mov = 1
         # Algorithm choice
-        self.method = [0,0,0,0]
         # method[0]: makeFROGdomain      # 0,1,2,3
         # method[1]: makeFROGantialias   # 1 = antialias
         # method[2]: guessPulsedomain    # not used
         # method[3]: guessPulseantialias # not used
+        self.method = [0,0,0,0]
 
         # G=RMS difference in entries of Fm and alpha*Fr
         # (where Fm is normalized so max(Fm)=1 and alpha is whatever
         # value minimizes G.) See DeLong1996
 
-    def setN(self,val):
-        self.N = val
+    def set_size(self, val: int):
+        """ Sets the size that is used by prepFROG to prepare the
+        FROG trace.
+        """
+        self.prep_size = val
 
-    def setIterMax(self,val):
-        self.iterMAX = val
+    def set_max_iterations(self, val: int):
+        """ Sets the maximum iterations of the phase retrieval. """
+        self.max_iter = val
 
-    def setGTol(self,val):
+    def set_tolerance(self, val: float):
+        """ Sets the tolerance on the error between reconstructed and
+        original FROG trace. If the error is smaller than the tolerance
+        the retrieval ist stopped. """
         self.GTol = val
 
-    def setFccd(self,val):
+    def setFccd(self, val):
         self.Fccd = val
 
-    def setFccdSig(self,dummy,val):
+    def setFccdSig(self,dummy, val):
         if dummy==2:
             self.setFccd(val)
 
-    def rmsdiff(self,F1,F2):
+    def rmsdiff(self, F1, F2):
         # RMS difference in the entries of two real matrices/vectors.
         rmsdiff = np.sqrt(np.mean(np.square(F1-F2)))
         return rmsdiff
 
-    def normalizemax1(self,M):
+    def normalizemax1(self, M):
         # Normalize a matrix or vector for its maximum to be 1.
         # Must have real nonnegative entries.
         normalizemax1 = M/np.amax(M)
         return normalizemax1
 
-    def calcalpha(self,Fm,Fr):
+    def calcalpha(self, Fm, Fr):
         # Calculates alpha, the positive number that minimizes
         # rmsdiff(Fm,alpha*Fr). See DeLong1996
         calcalpha = np.sum(Fm*Fr)/np.sum(np.square(Fr))
         return calcalpha
 
-    def parity(self,x):
+    def parity(self, x):
         # 1 for odd, 0 for even. Don't delete! It looks like it's not used
         # in the program, but it can be called by the 'method' strings.
         parity = int(x-2*np.floor(x/2.))
         return parity
 
-
-
-    def setSeed(self, seed_opt: int):
+    def load_seed(self, path: pathlib.Path):
         """
-        Function has input 0 or 1:
-        0: Seed will be a random Gaussian
-        1: Seed will be read from file.
-           Number of data points has to equal prepFROG size N,
-           which is usually N = 128
+        Load a custom seed for the retrieval from a file
         """
-        if seed_opt==0:
-            self.seed = None
-        elif seed_opt==1:
-            seed_real, seed_imag = np.loadtxt('seed/seed.input', unpack=True)
-            seed = seed_real + 1j * seed_imag
-            seed = seed.reshape(self.N,1)
-            self.seed = seed
-        else:
-            print("Input parameter for this method must be 0 or 1!")
-
+        # file was originally loaded from 'seed/seed.input'
+        seed_real, seed_imag = np.loadtxt(path, unpack=True)
+        seed = seed_real + 1j * seed_imag
+        self.seed = seed.reshape(self.prep_size, 1)
 
 
 
@@ -191,7 +187,6 @@ class PhaseRetrieval:
         self,
         ccddt=None,
         ccddv=None,
-        N=None,
         ccdimg=None,
         showprogress=0,
         showautocor=0,
@@ -202,13 +197,12 @@ class PhaseRetrieval:
         The following attributes have to be set before using this method:
         self.ccddt
         self.ccddv
-        self.N
+        self.prep_size
         """
         print('Prepare FROG trace...')
 
         #if ccddt is None: ccddt = self.ccddt
         #if ccddv is None: ccddv = self.ccddv
-        if N is None: N = self.N
         if ccdimg is None:
             if False:
             # if self.Fccd is not None:
@@ -275,8 +269,8 @@ class PhaseRetrieval:
         # (A): vpxpersample / tpxpersample = aspectratio (this helps accuracy)
         # (B): (vpxpersample * ccddv) * (tpxpersample * ccddt) = 1/N (this is
         # FFT requirement)
-        vpxpersample = np.sqrt((1/(N*ccddtdv))*aspectratio)
-        tpxpersample = np.sqrt((1/(N*ccddtdv))/aspectratio)
+        vpxpersample = np.sqrt((1/(self.prep_size*ccddtdv))*aspectratio)
+        tpxpersample = np.sqrt((1/(self.prep_size*ccddtdv))/aspectratio)
 
         #if showprogress:
         print('Vertical pixels per freq (v) sample: %.3f' % vpxpersample)
@@ -335,21 +329,21 @@ class PhaseRetrieval:
         # Want an NxN pixel image to process. Go through each pixel of the
         # original, and have it contribute to the nearest pixel of the final
         # (in an average).
-        if(np.shape(ccdimg)==(N, N) and ccddt * ccddv == 1./float(N)):
+        if(np.shape(ccdimg)==(self.prep_size, self.prep_size) and ccddt * ccddv == 1./float(self.prep_size)):
             # Skip downsampling if ccdimg is already sampled correctly.
             fnlimg = ccdimg
             fnldt = ccddt
         else:
-            fnlimg = np.zeros((N, N))
+            fnlimg = np.zeros((self.prep_size, self.prep_size))
             # How many times you've added onto that pixel
-            fnlimgcount = np.zeros((N, N))
+            fnlimgcount = np.zeros((self.prep_size, self.prep_size))
             for ii in range(ccdsizev):  # Which row? (which freq?)
-                rowinfinal = int(round(N/2.+((ii+1)-centerrow)/vpxpersample))-1
-                if(rowinfinal<0 or rowinfinal>=N):
+                rowinfinal = int(round(self.prep_size/2.+((ii+1)-centerrow)/vpxpersample))-1
+                if(rowinfinal<0 or rowinfinal>=self.prep_size):
                     continue
                 for jj in range(ccdsizet):
-                    colinfinal = int(round(N/2.+((jj+1)-centercol)/tpxpersample))-1
-                    if(colinfinal<0 or colinfinal>N-1):
+                    colinfinal = int(round(self.prep_size/2.+((jj+1)-centercol)/tpxpersample))-1
+                    if(colinfinal<0 or colinfinal>self.prep_size-1):
                         continue
                     fnlimgcount[rowinfinal, colinfinal] += 1
                     fnlimg[rowinfinal, colinfinal] += ccdimg[ii,jj]
@@ -370,7 +364,7 @@ class PhaseRetrieval:
         if showprogress:
             plt.subplot(224)
             plt.imshow(fnlimg)
-            plt.title('(4) After downsampling to %dx%d' % (N, N))
+            plt.title('(4) After downsampling to %dx%d' % (self.prep_size, self.prep_size))
             plt.subplots_adjust(
                 left=0.06, bottom=0.06, right=0.94, top=0.94, wspace=0.1, hspace=0.3
                 )
@@ -605,19 +599,10 @@ class PhaseRetrieval:
             return Pt
 
 
-        """ End guessPulse method """
-
-
-
-
 
 
     def retrievePhase(self,
                       Fm=None,      # Prep. Frog trace
-                      seed=None,    # Is usually given by a random func
-                      GTol=None,    # FROG error tolerance
-                      iterMAX=None, # Maximum iterations of algorithm
-                      method=None,  # Methods defined in makeFROG
                       mov=0,        # Updates while running?
                       dtperpx=None, # Will be set by prepFROG
                       units=None,
@@ -641,11 +626,6 @@ class PhaseRetrieval:
                 if Fm.ndim==3:
                     Fm = Fm[:,:,0]
                 Fm = np.asarray(Fm,dtype=np.float64)
-
-        if iterMAX is None: iterMAX = self.iterMAX
-        if method is None: method = self.method
-        if GTol is None: GTol = self.GTol
-        if seed is None: seed = self.seed
 
         N = len(Fm[0])
 
@@ -675,8 +655,8 @@ class PhaseRetrieval:
         vplotrange = [np.min(vpxls), np.max(vpxls)]
 
 
-        # User defined seed?
-        if np.all(seed) is None:
+        # Make a randam guess for a seed if no external seed has been loaded.
+        if self.seed is None:
             # Generate initial guess of gate and pulse from noise times
             # a gaussian envelope function. Don't use complex phase 0 or
             # it gets stuck in real numbers, but don't let the complex
@@ -686,7 +666,7 @@ class PhaseRetrieval:
                 ) * np.exp(0.1*2.*np.pi*1.j*np.random.rand(1, N)))
             Pt = Pt.reshape(N, 1)
         else:
-            Pt = seed
+            Pt = self.seed
 
         # Normalize FROG trace to unity max intensity
         Fm = self.normalizemax1(Fm)
@@ -698,10 +678,10 @@ class PhaseRetrieval:
         # Generate FROG trace
         iteration = 0
 
-        makeFROGdomain = method[0]
-        makeFROGantialias = method[1]
-        #guesspulsedomain=method[2] # not used
-        #guesspulseantialias=method[3] # not used
+        makeFROGdomain = self.method[0]
+        makeFROGantialias = self.method[1]
+        #guesspulsedomain = self.method[2] # not used
+        #guesspulseantialias = self.method[3] # not used
 
         # EFr is reconstructed FROG trace complex amplitudes ( Fr=|EFr|^2 )
         Fr, EFr = self.makeFROG(Pt, makeFROGdomain, makeFROGantialias)
@@ -754,7 +734,7 @@ class PhaseRetrieval:
         #  F R O G   I T E R A T I O N   A L G O R I T H M
         #  --------------------------------------------------
 
-        while G>GTol and iteration<iterMAX:
+        while G>self.GTol and iteration<self.max_iter:
             # Keep count of no. of iterations
             iteration += 1
             if mov==2:
@@ -762,10 +742,10 @@ class PhaseRetrieval:
 
             # Check method to use. Have to run this inside the loop because method
             # may vary depending on iter.
-            makeFROGdomain = method[0]
-            makeFROGantialias=method[1]
-            guesspulsedomain=method[2]
-            guesspulseantialias=method[3]
+            makeFROGdomain = self.method[0]
+            makeFROGantialias = self.method[1]
+            guesspulsedomain = self.method[2]
+            guesspulseantialias = self.method[3]
 
             # Update best-guess EFr: Phase from last makeFROG, amplitudes from Fm.
             # Change absolute values of EFr to match Fm (keep phase the same)

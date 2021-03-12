@@ -14,7 +14,6 @@ import numpy as np
 import yaml
 import imageio
 from pyqtgraph.parametertree import Parameter
-
 from labdevices import newport
 
 from . import acquisition
@@ -179,13 +178,13 @@ class FROG:
             ccddt = self._data.meta['ccddt']
             ccddv = self._data.meta['ccddv']
             # Get settings for phase retrieval
-            pixels = self.parameters.get_prep_frog_size()
-            gtol = self.parameters.get_error_tolerance()
-            itermax = self.parameters.get_max_iterations()
+            #pixels = self.parameters.get_prep_frog_size()
+            #gtol = self.parameters.get_error_tolerance()
+            #itermax = self.parameters.get_max_iterations()
 
-            self.algo.prepFROG(ccddt=ccddt, ccddv=ccddv, N=pixels, \
+            self.algo.prepFROG(ccddt=ccddt, ccddv=ccddv, \
                 ccdimg=self._data.image, flip=2)
-            self.algo.retrievePhase(GTol=gtol, iterMAX=itermax, \
+            self.algo.retrievePhase(
                 signal_data=sig_retdata, signal_label=sig_retlabels, \
                     signal_title=sig_rettitles, signal_axis=sig_retaxis)
         else:

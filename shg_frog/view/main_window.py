@@ -88,6 +88,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.parameter_tree.setParameters(self.par, showTop=False)
         self.gridLayout.addWidget(self.parameter_tree, 1, 0, 1, 2)
         # Implement Actions for ParameterTree
+        self.tree_retrieval_actions()
         self.tree_stage_actions()
         self.tree_camera_actions()
         #  self.tree_ando_actions()
@@ -152,6 +153,16 @@ class MainWindow(QtWidgets.QMainWindow):
         # needed for updating par tree in GUI
         self.parameter_tree.setParameters(self.par, showTop=False)
 
+
+    def tree_retrieval_actions(self):
+        """ Connect retrieval options. """
+        retrieval_par = self.par.child('Phase Retrieval')
+        size_par = retrieval_par.child('prepFROG Size')
+        size_par.sigValueChanged.connect(lambda _, val: self.frog.algo.set_size(val))
+        iter_max_par = retrieval_par.child('Max. Iterations')
+        iter_max_par.sigValueChanged.connect(lambda _, val: self.frog.algo.set_max_iterations(val))
+        tolerance_par = retrieval_par.child('G Tolerance')
+        tolerance_par.sigValueChanged.connect(lambda _, val: self.frog.algo.set_tolerance(val))
 
     def tree_stage_actions(self):
         stage_par = self.par.param('Stage')
