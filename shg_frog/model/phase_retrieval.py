@@ -40,6 +40,50 @@ import yaml
 from pyqtgraph.Qt import QtGui, QtCore
 import pyqtgraph as pg
 
+
+def rms_diff(F1: np.ndarray, F2: np.ndarray) -> float:
+    """ Calculates RMS difference in the entries of two real matrices/vectors. """
+    result = np.sqrt(np.mean(np.square(F1-F2)))
+    return result
+
+def normalize_max_one(arr: np.ndarray) -> np.ndarray:
+    """ Normalize a matrix or vector for its maximum to be 1.
+    Must have real nonnegative entries.
+    """
+    result = arr/np.amax(arr)
+    return result
+
+def calc_alpha(Fm, Fr):
+    """ Calculates alpha, the positive number that minimizes
+    rms_diff(Fm,alpha*Fr). See DeLong1996
+    """
+    result = np.sum(Fm*Fr)/np.sum(np.square(Fr))
+    return result
+
+def parity(x):
+    """
+    1 for odd, 0 for even. Don't delete! It looks like it's not used
+    in the program, but it can be called by the 'method' strings.
+    """
+    result = int(x-2*np.floor(x/2.))
+    return result
+
+def make_axis(length: int, step: float) -> np.ndarray:
+    """ Create an array that contains the values of a time or frequency axis,
+    given the step size and the length of the array. The values are centered
+    around zero.
+
+    Arguments:
+        length -- length of array
+        step -- step size
+
+    Returns:
+        axis -- horizontal array for use as a plot axis
+    """
+    axis = np.arange(-(length-1)/2. * step, length/2.*step, step)
+    return axis
+
+
 class PhaseRetrieval:
     """
     The two main methods of this class are:
@@ -145,36 +189,16 @@ class PhaseRetrieval:
     def setFccd(self, val):
         self.Fccd = val
 
-    def setFccdSig(self,dummy, val):
+    def setFccdSig(self, dummy, val):
         if dummy==2:
             self.setFccd(val)
 
-    def rmsdiff(self, F1, F2):
-        # RMS difference in the entries of two real matrices/vectors.
-        rmsdiff = np.sqrt(np.mean(np.square(F1-F2)))
-        return rmsdiff
 
-    def normalizemax1(self, M):
-        # Normalize a matrix or vector for its maximum to be 1.
-        # Must have real nonnegative entries.
-        normalizemax1 = M/np.amax(M)
-        return normalizemax1
-
-    def calcalpha(self, Fm, Fr):
-        # Calculates alpha, the positive number that minimizes
-        # rmsdiff(Fm,alpha*Fr). See DeLong1996
-        calcalpha = np.sum(Fm*Fr)/np.sum(np.square(Fr))
-        return calcalpha
-
-    def parity(self, x):
-        # 1 for odd, 0 for even. Don't delete! It looks like it's not used
-        # in the program, but it can be called by the 'method' strings.
-        parity = int(x-2*np.floor(x/2.))
-        return parity
 
     def load_seed(self, path: pathlib.Path):
         """
         Load a custom seed for the retrieval from a file
+        and put it into the seed attribute.
         """
         # file was originally loaded from 'seed/seed.input'
         seed_real, seed_imag = np.loadtxt(path, unpack=True)
@@ -398,28 +422,32 @@ class PhaseRetrieval:
         """
         makeFROG: Reads in the (complex) electric field as a function of time,
         and computes the expected SHG-FROG trace.
+
+        Arguments:
+        Pt -- vertical array, complex electric field
+        domain -- 0: delay space, 1: frequency space
+        antialias --
+
+        Return:
+        [F, EF] -- frog intensity trace, frog complex field trace
         """
-
-
 
         N = len(Pt) # or: N = self.N
 
         if domain==0:
-            EF = np.outer(Pt,Pt)
+            EF = np.outer(Pt, Pt)
 
             if antialias:
-                """
-    	        Anti-alias: Delete entries that come from spurious
-    	        wrapping-around. For example, an entry like P2*G(N-1) is spurious
-    	        because we did not measure such a large delay. For even N, there
-    	        are terms like P_i*G_(i+N/2) and P_(i+N/2)*G_i, which correspond
-    	        to a delay of +N/2 or -N/2. I'm deleting these terms. They are
-    	        sort of out-of-range, sort of in-range, because the maximal delay
-    	        in the FFT can be considered to have either positive or negative
-    	        frequency. This is the outer edge of the FROG trace so it
-    	        should be zero anyway. Deleting both halves keeps everything
-    	        symmetric when sign of delay is flipped.
-                """
+    	        # Anti-alias: Delete entries that come from spurious
+    	        # wrapping-around. For example, an entry like P2*G(N-1) is spurious
+    	        # because we did not measure such a large delay. For even N, there
+    	        # are terms like P_i*G_(i+N/2) and P_(i+N/2)*G_i, which correspond
+    	        # to a delay of +N/2 or -N/2. I'm deleting these terms. They are
+    	        # sort of out-of-range, sort of in-range, because the maximal delay
+    	        # in the FFT can be considered to have either positive or negative
+    	        # frequency. This is the outer edge of the FROG trace so it
+    	        # should be zero anyway. Deleting both halves keeps everything
+    	        # symmetric when sign of delay is flipped.
                 EF = EF - np.tril(EF,-np.ceil(N/2.)) - np.triu(EF,np.ceil(N/2.))
 
             for n in range(0, N):
@@ -429,13 +457,11 @@ class PhaseRetrieval:
             # EF is eqn (11) of Kane1999. From left column to right column, it's
             # tau=0,-1,-2...3,2,1
 
-
             # Permute the columns to the right order, tau=...,-1,0,1,...
             EF = np.fliplr(np.fft.fftshift(EF, 1))
 
 	        # FFT each column and put 0 frequency in the correct place:
             EF = np.roll(np.fft.fft(EF, None, axis=0), int(np.ceil(N/2.)-1), 0)
-
 
             # Generate FROG trace (= |field|^2)
             F = np.square(np.absolute(EF))
@@ -601,18 +627,22 @@ class PhaseRetrieval:
 
 
 
-    def retrievePhase(self,
-                      Fm=None,      # Prep. Frog trace
-                      mov: int=0,        # Updates while running?
-                      dtperpx: float=None, # Will be set by prepFROG
-                      units=None,
-                      signal_data=None,
-                      signal_label=None,
-                      signal_title=None,
-                      signal_axis=None):
+    def retrievePhase(
+        self, Fm: np.ndarray=None, mov: int=0, dtperpx: float=None, # Will be set by prepFROG
+        units=None, signal_data=None, signal_label=None, signal_title=None,
+        signal_axis=None):
         """
         Retrieves the phase using the prepared FROG trace Fm.
         This method makes use of makeFROG and prepFROG.
+        Arguments:
+        Fm -- prepared frog trace from prepFROG
+        mov -- 1: show plot while running
+        dtperpx -- time step between pixels
+        units --
+        signal_data --
+        signal_label --
+        signal_title --
+        signal_axis --
         """
 
         print('Retrieve pulse...')
@@ -641,9 +671,9 @@ class PhaseRetrieval:
         print(f'prepFROG: dt: {dtperpx}{dtunit} dv: {dvperpx}{dvunit}')
 
         # x-axis labels for plots
-        tpxls = np.arange(-dtperpx*(N-1)/2., dtperpx*N/2., dtperpx)
+        tpxls = make_axis(N, dtperpx)
         # y-axis labels for plots
-        vpxls = np.arange(-dvperpx*(N-1)/2., dvperpx*N/2., dvperpx)
+        vpxls = make_axis(N, dvperpx)
 
         # Emit axis scale information
         if signal_axis is not None:
@@ -664,12 +694,13 @@ class PhaseRetrieval:
             Pt = (np.exp(
                 -2. * np.log(2.) * np.square( (np.arange(0, N) - N/2.) / (N/10.) )
                 ) * np.exp(0.1*2.*np.pi*1.j*np.random.rand(1, N)))
+            # Used as a vertical array
             Pt = Pt.reshape(N, 1)
         else:
             Pt = self.seed
 
         # Normalize FROG trace to unity max intensity
-        Fm = self.normalizemax1(Fm)
+        Fm = normalize_max_one(Fm)
 
         ###################
         # Start main part #
@@ -687,8 +718,8 @@ class PhaseRetrieval:
         Fr, EFr = self.makeFROG(Pt, makeFROGdomain, makeFROGantialias)
 
         # Calculate FROG error G, see DeLong1996
-        Fr = Fr * self.calcalpha(Fm, Fr) #scale Fr to best match Fm, see DeLong1996
-        G = self.rmsdiff(Fm, Fr)
+        Fr = Fr * calc_alpha(Fm, Fr) #scale Fr to best match Fm, see DeLong1996
+        G = rms_diff(Fm, Fr)
 
         if mov==0 and signal_data is not None and signal_label is not None:
             signal_data.emit(0, Fm)
@@ -773,8 +804,8 @@ class PhaseRetrieval:
 
             # Calculate FROG error G, see DeLong1996
             # Scale Fr to best match Fm, see DeLong1996
-            Fr = Fr * self.calcalpha(Fm, Fr)
-            G = self.rmsdiff(Fm, Fr)
+            Fr = Fr * calc_alpha(Fm, Fr)
+            G = rms_diff(Fm, Fr)
 
             print(f"Iter. {iteration:3}: FROG Error {G:.4f}")
 
