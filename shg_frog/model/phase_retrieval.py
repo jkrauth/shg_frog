@@ -1,7 +1,7 @@
 """
 Module that implements the phase retrieval algorithm used by the FROG software
 *********
-The realization of this GP (general projections) phase retrieval algorithm
+The realization of the GP (general projections) phase retrieval algorithm
 in here is based on the Matlab code from Steven Byrnes who wrote an extension
 of Adam Wyatt's MATLAB FROG program. Various features include anti-aliasing
 algorithm.
@@ -22,6 +22,10 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *********
+
+
+The realization of the Ptychographic Reconstruction algorithm, also used in here
+is based on the paper of Sidorenko et al. (2016) and their Matlab implementation.
 
 Julian Krauth tranlated the code from Matlab into Python for the use in the
 shg_frog python package.
@@ -103,7 +107,10 @@ class PhaseRetrieval:
     1. prepFROG(): Preparing the measured FROG trace
        to be used for the phase retrieval
     2. retrievePhase(): Uses the prepared FROG trace and retrieves
-       the pulse shape in time and frequency domain.
+       the pulse shape in time and frequency domain using a generalized projections
+       algorithm
+    3. ePIE_fun_FROG(): uses prepared FROG trace and retrieves the pulse
+       shape and phase in time using a ptychographic algorithm.
 
     The retrievePhase() method uses two additional methods for
     the algorithm:
@@ -145,7 +152,8 @@ class PhaseRetrieval:
         # Difference in time-delay (dt) between consecutive pixels. This
         # automatically fixes frequency units, too. Doesn't affect algorithm,
         # only plots and such. This value will be updated by prepFROG
-        self.dtperpx = 0.0308
+        self.dtperpx = None
+        # previously I had here as a default value 0.0308
         # Frequency interval per pixel, given by self.dtperpx
         #self.dvperpx = 1 / (self.N*self.dtperpx)
 
@@ -159,7 +167,9 @@ class PhaseRetrieval:
         self.Fccd = None
         # Preparated trace, created by self.setPrepFrogTrace()
         self.Fm = np.zeros((self.prep_size,self.prep_size)).astype(np.float64)
-        # Reconstructed trace, created by self.retrievePhase()
+        # Reconstructed electric field in time domain, created by retrieval function
+        self.Pt = None
+        # Reconstructed trace, created by retrieval function
         self.Fr = None
 
         ### Parameters used by retrievePhase method
@@ -857,7 +867,8 @@ class PhaseRetrieval:
         # Save the complex electric field for test purpose
         #np.savetxt('seed/seed_new.input', np.column_stack([Pt.real, Pt.imag]))
 
-
+        # Save reconstructed FROG trace in attribute
+        self.Pt = Pt
         self.Fr = Fr
         print('Phase retrieval finished!')
 
@@ -890,13 +901,9 @@ class PhaseRetrieval:
 
         if I is None and dt is None and df is None:
             # Use trace prepared by prepFROG
-            I = self.Fm * 65535 / np.amax(self.Fm)
-            I = np.rint(I).astype('float64')
+            I = self.Fm
             dt = self.dtperpx
             df = 1/(I.shape[1]*dt)
-
-        #print(I.dtype, I.shape, np.max(I), np.min(I))
-        #sys.exit()
 
         # (Frequencies, Delays) = shape
         (N, K) = I.shape
@@ -908,6 +915,7 @@ class PhaseRetrieval:
         # are good to use. One could for example only measure every second frequency.
         # then we would use the modulo with 2 here.
         # Originally Fsupp was an argument of this function.
+        # It is currently not implemented.
         Fsupp = np.array([True if i%1 == 0 else False for i in range(N)])
 
         # Check input:
@@ -924,16 +932,16 @@ class PhaseRetrieval:
 
         # Sum over frequency axis yields the initial guess for the algorithm.
         # This corresponds to the intensity autocorrelation of the pulse.
-        #Obj = np.sum(I, axis=0) \
-        #    / np.sqrt(np.sum(np.abs( np.sum(I, axis=0) )**2))
-        #Obj = Obj.reshape(K, 1)
+        Obj = np.sum(I, axis=0) \
+            / np.sqrt(np.sum(np.abs( np.sum(I, axis=0) )**2))
+        Obj = Obj.reshape(K, 1)
         # Use Gaussian
         # Obj = (np.exp(
         #     -2. * np.log(2.) * np.square( (np.arange(0, N) - N/2.) / (N/10.) )
         #     ) * np.exp(0.1*2.*np.pi*1.j*np.random.rand(1, N)))
         # Obj = Obj.reshape(K,1)
         # Load seed
-        Obj = np.loadtxt('seed_ptych.input').view(complex).reshape(-1).reshape(N, 1)
+        #Obj = np.loadtxt('seed_ptych.input').view(complex).reshape(-1).reshape(N, 1)
 
         # del1 = 1e-3
         # del2 = 2e-6
@@ -993,6 +1001,7 @@ class PhaseRetrieval:
                     print(f'Iter:{i:3d}  IterK:{iterK}  alpha={alpha:.4f} Error={error:.4f}')
 
                     if signal_data is not None and signal_title is not None:
+                        # Prepare and send data for plotting
                         time_field = Obj.reshape(N,)
                         time_int_scaled = 2*np.pi*get_norm_intensity(time_field)
                         time_phase = np.angle(time_field)+np.pi
@@ -1004,6 +1013,8 @@ class PhaseRetrieval:
             i += 1
         # Save as seed.
         # np.savetxt('seed_ptych.input', Obj.view(float).reshape(-1, 2))
+        self.Pt = Obj
+        self.Fr = Ir
         return Obj, error, Ir
 
 
