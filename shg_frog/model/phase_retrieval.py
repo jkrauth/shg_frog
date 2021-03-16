@@ -905,13 +905,9 @@ class PhaseRetrieval:
         # (Frequencies, Delays) = shape
         (N, K) = I.shape
         # Make a time axis
-        ### It seems that the make_axis function , since it is offset by
-        ### one, doesnt work here. I should look into this.
         D = make_axis(K, dt)
-        #D = np.arange(-K/2*dt, K/2*dt, dt)
         # We need a vertical frequency axis here
         F = make_axis(N, df).reshape(N, 1)
-        #F = np.arange(-N/2*df, N/2*df, df).reshape(N, 1)
         # Create bool array that yields which frequencies from the frequency axis
         # are good to use. One could for example only measure every second frequency.
         # then we would use the modulo with 2 here.
@@ -932,16 +928,16 @@ class PhaseRetrieval:
 
         # Sum over frequency axis yields the initial guess for the algorithm.
         # This corresponds to the intensity autocorrelation of the pulse.
-        Obj = np.sum(I, axis=0) \
-            / np.sqrt(np.sum(np.abs( np.sum(I, axis=0) )**2))
-        Obj = Obj.reshape(K, 1)
+        #Obj = np.sum(I, axis=0) \
+        #    / np.sqrt(np.sum(np.abs( np.sum(I, axis=0) )**2))
+        #Obj = Obj.reshape(K, 1)
         # Use Gaussian
         # Obj = (np.exp(
         #     -2. * np.log(2.) * np.square( (np.arange(0, N) - N/2.) / (N/10.) )
         #     ) * np.exp(0.1*2.*np.pi*1.j*np.random.rand(1, N)))
         # Obj = Obj.reshape(K,1)
         # Load seed
-        #Obj = np.loadtxt('seed2.output').view(complex).reshape(-1).reshape(N, 1)
+        Obj = np.loadtxt('seed_ptych.input').view(complex).reshape(-1).reshape(N, 1)
 
         # del1 = 1e-3
         # del2 = 2e-6
@@ -1006,28 +1002,6 @@ class PhaseRetrieval:
                         signal_data.emit(2, np.abs(2*np.pi*time_trace/np.max(time_trace)))
                         signal_data.emit(3, np.angle(time_trace)+np.pi)
                         signal_title.emit(i, error)
-
-                #     subplot(2,2,1);
-                #     p1 = plot(time*1e15, abs(Obj), 'LineWidth',2);
-                #     xlabel('Time [fsec]','FontSize',16); ylabel('Amplitude [a.u.]','FontSize',16);
-                #     # xlim([-1e-13 1e-13]);
-                #     title('Intensity Obj');
-
-                #     subplot(2,2,2)
-                #     p2 = plot(time*1e15, unwrap(angle(Obj))/pi, 'LineWidth',2);
-                #     xlabel('Time [fsec]','FontSize',16); ylabel('Phase [Pi]','FontSize',16);
-                #     # xlim([-1e-13 1e-13]);
-                #     title('Phase Obj');
-
-                #     subplot(2,2,3)
-                #     imagesc(time*1e15, fftshift(F)*1e-12, I.*kron(fftshift(Fsupp), ones(1, K)) );title('Used I');
-                #     xlabel('Time [fsec]','FontSize',16); ylabel('Freq.[THz]','FontSize',16);
-
-                #     subplot(2,2,4)
-                #     imagesc(time*1e15, fftshift(F)*1e-12, Ir);title('Recovered I');
-                #     xlabel('Time [fsec]','FontSize',16); ylabel('Freq.[THz]','FontSize',16);
-                #     pause(0.01);
-                # end
 
             i += 1
         # Save as seed.
