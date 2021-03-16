@@ -45,13 +45,6 @@ def rms_diff(F1: np.ndarray, F2: np.ndarray) -> float:
     result = np.sqrt(np.mean(np.square(F1-F2)))
     return result
 
-def normalize_max_one(arr: np.ndarray) -> np.ndarray:
-    """ Normalize a matrix or vector for its maximum to be 1.
-    Must have real nonnegative entries.
-    """
-    result = arr/np.amax(arr)
-    return result
-
 def calc_alpha(Fm, Fr):
     """ Calculates alpha, the positive number that minimizes
     rms_diff(Fm,alpha*Fr). See DeLong1996
@@ -86,6 +79,7 @@ def make_axis(length: int, step: float) -> np.ndarray:
 def shift_signal(sig_in: np.ndarray, shift: float, freq_axis: np.ndarray):
     """
     Shift pulse in time by a given delay.
+
     Arguments:
     sig_in -- complex float dim 128, pulse field (in time)
     d -- float, a delay picked from the delay vector
@@ -97,6 +91,11 @@ def shift_signal(sig_in: np.ndarray, shift: float, freq_axis: np.ndarray):
     sig_freq_domain = np.fft.fft(sig_in, axis=0)
     sig_out = np.fft.ifft(sig_freq_domain * np.exp(1.j*2*np.pi*shift*freq_axis), axis=0)
     return sig_out
+
+def get_norm_intensity(field: np.ndarray) -> np.ndarray:
+    """ Convert field to intensity and normalize such that max is 1. """
+    intensity = np.square(np.abs(field))
+    return intensity/np.amax(intensity)
 
 class PhaseRetrieval:
     """
@@ -714,7 +713,7 @@ class PhaseRetrieval:
             Pt = self.seed
 
         # Normalize FROG trace to unity max intensity
-        Fm = normalize_max_one(Fm)
+        Fm = Fm/np.amax(Fm)
 
         ###################
         # Start main part #
@@ -826,14 +825,11 @@ class PhaseRetrieval:
 
             # Create plotting data
             # time domain
-            tPt_data = 2*np.pi*np.square( np.absolute(Pt[:, 0]) ) \
-                / np.square( np.amax(np.absolute(Pt)) )
-
+            tPt_data = 2*np.pi*get_norm_intensity(Pt[:, 0])
             tPt_angle = np.angle(Pt[:,0])+np.pi
             # frequency domain
             FFTPt = np.fft.fftshift(np.fft.fft(np.fft.fftshift(Pt), axis=0))
-            vPt_data = 2*np.pi*np.square(np.absolute(FFTPt[:,0]))\
-                / np.square(np.amax(np.absolute(FFTPt)))
+            vPt_data = 2*np.pi*get_norm_intensity(FFTPt[:,0])
             vPt_angle = np.angle(FFTPt[:,0])+np.pi
             if mov==0 and signal_data is not None and signal_title is not None:
                 signal_data.emit(1, Fr)
@@ -997,10 +993,12 @@ class PhaseRetrieval:
                     print(f'Iter:{i:3d}  IterK:{iterK}  alpha={alpha:.4f} Error={error:.4f}')
 
                     if signal_data is not None and signal_title is not None:
-                        time_trace = Obj.reshape(N,)
+                        time_field = Obj.reshape(N,)
+                        time_int_scaled = 2*np.pi*get_norm_intensity(time_field)
+                        time_phase = np.angle(time_field)+np.pi
                         signal_data.emit(1, Ir)
-                        signal_data.emit(2, np.abs(2*np.pi*time_trace/np.max(time_trace)))
-                        signal_data.emit(3, np.angle(time_trace)+np.pi)
+                        signal_data.emit(2, time_int_scaled)
+                        signal_data.emit(3, time_phase)
                         signal_title.emit(i, error)
 
             i += 1
