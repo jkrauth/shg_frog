@@ -11,8 +11,9 @@ Commercial devices exist, but are rather expensive. A home-build device can save
 The code in this repository provides:
 
 * A graphical user interface for the measurement of the so-called FROG trace.
-* A GP (generalized projections) phase retrieval algorithm in order to obtain the original pulse shape.
-  This algorithm is based on the [Matlab package](https://nl.mathworks.com/matlabcentral/fileexchange/34986-frequency-resolved-optical-gating-frog) by Steven Byrnes.
+* The possibility to choose between two different phase retrieval algorithms:
+  * GP (generalized projections) phase retrieval algorithm (see [Kane, 1999](https://ieeexplore.ieee.org/abstract/document/753647)). The code used here is based on the [Matlab package](https://nl.mathworks.com/matlabcentral/fileexchange/34986-frequency-resolved-optical-gating-frog) by Steven Byrnes.
+  * Ptychographic reconstruction algorithm (see [Sidorenko et al., 2016](https://www.osapublishing.org/optica/fulltext.cfm?uri=optica-3-12-1320&id=354383)). The code used here is based on the [Matlab package](https://oren.net.technion.ac.il/homepage/) by the same authors.
 * A list of possible hardware components that integrate nicely with this software. But also alternative devices can be used and easily integrated.
 
 The main window:
