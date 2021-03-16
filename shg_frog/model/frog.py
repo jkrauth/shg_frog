@@ -181,12 +181,15 @@ class FROG:
             # prepare FROG image
             self.algo.prepFROG(ccddt=ccddt, ccddv=ccddv, \
                 ccdimg=data, flip=2)
-            # Retrieve phase
-            #self.algo.retrievePhase(
-            self.algo.ePIE_fun_FROG(
-                signal_data=sig_retdata, signal_label=sig_retlabels, \
-                    signal_title=sig_rettitles,
-                    signal_axis=sig_retaxis)
+            # Retrieve phase, algorithm is chosen in GUI
+            if self.parameters.get_algorithm_type() == 'GP':
+                self.algo.retrievePhase(
+                    signal_data=sig_retdata, signal_label=sig_retlabels, \
+                    signal_title=sig_rettitles, signal_axis=sig_retaxis)
+            else:
+                self.algo.ePIE_fun_FROG(
+                    signal_data=sig_retdata, signal_label=sig_retlabels, \
+                    signal_title=sig_rettitles, signal_axis=sig_retaxis)
         else:
             raise Exception('No recorded trace in buffer!')
 
@@ -239,6 +242,7 @@ class FrogParams:
         params = [
             {'name':'Phase Retrieval', 'type':'group', 'visible':True, 'children': [
                 {'name':'prepFROG Size', 'type': 'int', 'value': 128, 'compactHeight': False},
+                {'name':'Algorithm', 'type': 'list', 'values': {"GP":"GP", "Ptychographic":"PT"}, 'value':"GP"},
                 # {'name':'Seed', 'type': 'list', 'values': {"Random":0, "fromFile":1}, 'value':0},
                 {'name':'Max. Iterations', 'type': 'int', 'value': 200, 'compactHeight': False},
                 {'name':'G Tolerance', 'type': 'float', 'value': 0.001, 'compactHeight': False}
@@ -421,6 +425,8 @@ class FrogParams:
             print('  data:      %s'% str(data))
             print('  ----------')
 
+    def get_algorithm_type(self) -> str:
+        return self.par.param('Phase Retrieval').child('Algorithm').value()
 
     def get_sensor_size(self) -> list():
         return self._sensor_width, self._sensor_height
