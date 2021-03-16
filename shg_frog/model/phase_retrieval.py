@@ -31,7 +31,6 @@ Author: Julian Krauth
 Date created: 2019/11/27
 Python Version: 3.7
 """
-
 import pathlib
 import numpy as np
 import imageio
@@ -80,9 +79,24 @@ def make_axis(length: int, step: float) -> np.ndarray:
     Returns:
         axis -- horizontal array for use as a plot axis
     """
-    axis = np.arange(-(length-1)/2. * step, length/2.*step, step)
+    axis = np.arange(-length/2 * step, length/2*step, step)
     return axis
 
+
+def shift_signal(sig_in: np.ndarray, shift: float, freq_axis: np.ndarray):
+    """
+    Shift pulse in time by a given delay.
+    Arguments:
+    sig_in -- complex float dim 128, pulse field (in time)
+    d -- float, a delay picked from the delay vector
+    F -- float dim 128, vector of frequencies
+
+    Returns:
+    sig_out -- complex float dim 128, pulse field
+    """
+    sig_freq_domain = np.fft.fft(sig_in, axis=0)
+    sig_out = np.fft.ifft(sig_freq_domain * np.exp(1.j*2*np.pi*shift*freq_axis), axis=0)
+    return sig_out
 
 class PhaseRetrieval:
     """
@@ -858,14 +872,192 @@ class PhaseRetrieval:
                 QtGui.QApplication.instance().exec_()
 
 
+    def ePIE_fun_FROG(
+        self, I: np.ndarray=None, dt: np.ndarray=None, df: np.ndarray=None,
+        signal_data=None, signal_label=None, signal_title=None,
+        signal_axis=None):
+        """
+        Function the reconstructs a pulse function (in time) from a
+        SHG FROG trace by use of the Ptychographic algorithm.
+        No prior knowledge needed.
+
+        Arguments:
+        I       =   float dim 128x128, Experimental / Simulated SHG FROG Trace
+        dt       =   float dim 128, vector of delays that coresponds to trace.
+        df       =   float dim 128, vector of frequencies.
+
+        Returns:
+        Obj     =   complex float dim 128, Reconstructed pulse field (in time).
+        Ir      =   float dim 128x128, reconstructed FROG trace.
+        error   =   float dim 200, vector of errors for each iteration
+        """
+
+        if I is None and dt is None and df is None:
+            # Use trace prepared by prepFROG
+            I = self.Fm * 65535 / np.amax(self.Fm)
+            I = np.rint(I).astype('float64')
+            dt = self.dtperpx
+            df = 1/(I.shape[1]*dt)
+
+        #print(I.dtype, I.shape, np.max(I), np.min(I))
+        #sys.exit()
+
+        # (Frequencies, Delays) = shape
+        (N, K) = I.shape
+        # Make a time axis
+        ### It seems that the make_axis function , since it is offset by
+        ### one, doesnt work here. I should look into this.
+        D = make_axis(K, dt)
+        #D = np.arange(-K/2*dt, K/2*dt, dt)
+        # We need a vertical frequency axis here
+        F = make_axis(N, df).reshape(N, 1)
+        #F = np.arange(-N/2*df, N/2*df, df).reshape(N, 1)
+        # Create bool array that yields which frequencies from the frequency axis
+        # are good to use. One could for example only measure every second frequency.
+        # then we would use the modulo with 2 here.
+        # Originally Fsupp was an argument of this function.
+        Fsupp = np.array([True if i%1 == 0 else False for i in range(N)])
+
+        # Check input:
+        n_freq = N
+        n_delay = K
+        assert I.shape == (n_freq, n_delay)
+        assert I.dtype == np.dtype('float64')
+        assert D.shape == (n_delay,)
+        assert D.dtype == np.dtype('float64')
+        assert Fsupp.shape == (n_freq,)
+        assert Fsupp.dtype == np.dtype('bool')
+        assert F.shape == (n_freq, 1)
+        assert F.dtype == np.dtype('float64')
+
+        # Sum over frequency axis yields the initial guess for the algorithm.
+        # This corresponds to the intensity autocorrelation of the pulse.
+        Obj = np.sum(I, axis=0) \
+            / np.sqrt(np.sum(np.abs( np.sum(I, axis=0) )**2))
+        Obj = Obj.reshape(K, 1)
+        # Use Gaussian
+        # Obj = (np.exp(
+        #     -2. * np.log(2.) * np.square( (np.arange(0, N) - N/2.) / (N/10.) )
+        #     ) * np.exp(0.1*2.*np.pi*1.j*np.random.rand(1, N)))
+        # Obj = Obj.reshape(K,1)
+        # Load seed
+        #Obj = np.loadtxt('seed2.output').view(complex).reshape(-1).reshape(N, 1)
+
+        # del1 = 1e-3
+        # del2 = 2e-6
+        error = 1
+        # This will be the reconstructed trace
+        Ir = np.zeros(I.shape)
+
+        # Send axis to plot
+        if signal_axis is not None:
+            signal_axis.emit(D, np.concatenate(F))
+
+        if signal_data is not None and signal_label is not None:
+            signal_data.emit(0, I)
+            signal_label.emit(self.units)
+
+        i = 1
+        while error > self.GTol and i <= self.max_iter:
+            # Produce random array of integers from 0 to K-1
+            s = np.random.permutation(range(K))
+
+            # Parameter that controls the strength of the update
+            # and is selected randomly in each iteration.
+            alpha = np.abs( 0.2 + np.random.randn()/20 )
+
+            for iterK in range(K):
+                # Calculate the SHG signal of the field
+                temp = shift_signal(Obj, D[s[iterK]], F)
+                psi = Obj * temp
+                # Fourier transform SHG signal
+                psi_n = np.fft.fft(psi, axis=0) / N
+                phase = np.exp(1.j*np.angle(psi_n))
+                amp = np.fft.fftshift( I[:, s[iterK]].reshape(K, 1) )
+                psi_n[Fsupp] = amp[Fsupp] * phase[Fsupp]
+                # Experimental soft thresholding, uncomment 2 following lines for try
+                # psi_n[~Fsupp] = (np.real(psi_n[~Fsupp]) - del2 * np.sign(np.real(psi_n[~Fsupp]))) \
+                #         * (np.abs(psi_n[~Fsupp]) >= del2) \
+                #     + 1.j*(np.imag(psi_n[~Fsupp]) - del2 * np.sign(np.imag(psi_n[~Fsupp]))) \
+                #         * (np.abs(psi_n[~Fsupp]) >= del2)
+
+                # Get the updated SHG signal
+                psi_n = np.fft.ifft(psi_n, axis=0)*N
+
+                # Update the pulse with a weight function
+                Uo = temp.conjugate() / np.max( (np.abs(temp)**2) )
+                Up = Obj.conjugate() / np.max( (np.abs(Obj)**2) )
+
+                Corr1 = alpha * Uo * (psi_n - psi)
+                Corr2 = shift_signal(alpha * Up * (psi_n - psi), -D[s[iterK]], F)
+
+                Obj = Obj +  Corr1 + Corr2
+                Ir[:, s[iterK]] = np.abs( np.fft.fftshift( np.fft.fft(Obj * temp, axis=0)/N ) )[:,0]
+
+
+                if iterK % K == 0:
+                    error = np.sqrt(np.sum(np.abs( Ir[np.fft.fftshift(Fsupp),:] - I[np.fft.fftshift(Fsupp),:] )**2 )) \
+                        / np.sqrt(np.sum(np.abs(I[np.fft.fftshift(Fsupp),:] )**2 ))
+                    print(f'Iter:{i:3d}  IterK:{iterK}  alpha={alpha:.4f} Error={error:.4f}')
+
+                    if signal_data is not None and signal_title is not None:
+                        time_trace = Obj.reshape(N,)
+                        signal_data.emit(1, Ir)
+                        signal_data.emit(2, np.abs(2*np.pi*time_trace/np.max(time_trace)))
+                        signal_data.emit(3, np.angle(time_trace)+np.pi)
+                        signal_title.emit(i, error)
+
+                #     subplot(2,2,1);
+                #     p1 = plot(time*1e15, abs(Obj), 'LineWidth',2);
+                #     xlabel('Time [fsec]','FontSize',16); ylabel('Amplitude [a.u.]','FontSize',16);
+                #     # xlim([-1e-13 1e-13]);
+                #     title('Intensity Obj');
+
+                #     subplot(2,2,2)
+                #     p2 = plot(time*1e15, unwrap(angle(Obj))/pi, 'LineWidth',2);
+                #     xlabel('Time [fsec]','FontSize',16); ylabel('Phase [Pi]','FontSize',16);
+                #     # xlim([-1e-13 1e-13]);
+                #     title('Phase Obj');
+
+                #     subplot(2,2,3)
+                #     imagesc(time*1e15, fftshift(F)*1e-12, I.*kron(fftshift(Fsupp), ones(1, K)) );title('Used I');
+                #     xlabel('Time [fsec]','FontSize',16); ylabel('Freq.[THz]','FontSize',16);
+
+                #     subplot(2,2,4)
+                #     imagesc(time*1e15, fftshift(F)*1e-12, Ir);title('Recovered I');
+                #     xlabel('Time [fsec]','FontSize',16); ylabel('Freq.[THz]','FontSize',16);
+                #     pause(0.01);
+                # end
+
+            i += 1
+        # Save as seed.
+        # np.savetxt('seed_ptych.input', Obj.view(float).reshape(-1, 2))
+        return Obj, error, Ir
+
 
 if __name__ == '__main__':
 
+    import matplotlib.pyplot as plt
 
-
+    data_path = pathlib.Path(__file__).parents[1] / 'data'
 
     # make Phase retrieval instance
-    pr = PhaseRetrieval(folder='out_test/')
+    pr = PhaseRetrieval()
+    trace = np.array(imageio.imread(data_path / 'prep_frog.tiff')).astype('float64')
+    with open(data_path / 'prep_meta.yml', 'r') as f:
+        meta = yaml.load(f, Loader=yaml.FullLoader)
+    dt = meta['ccddt']
+    dF = meta['ccddv']
+
+    #pr.prepFROG(ccddt=dt, ccddv=dF, ccdimg=trace)
+    field, error, frog_reconstructed = pr.ePIE_fun_FROG(I=trace, dt=dt, df=dF)
+    plt.figure('Frog reconstructed')
+    plt.imshow(frog_reconstructed)
+    plt.figure('amplitude')
+    plt.plot(np.abs(field*field.conjugate()))
+    plt.plot(np.unwrap(np.angle(field), axis=0))
+    plt.show()
+
 
     #pg.setConfigOptions(imageAxisOrder='row-major')
     #pg.mkQApp()

@@ -183,8 +183,10 @@ class FROG:
                 ccdimg=data, flip=2)
             # Retrieve phase
             self.algo.retrievePhase(
+            #self.algo.ePIE_fun_FROG(
                 signal_data=sig_retdata, signal_label=sig_retlabels, \
-                    signal_title=sig_rettitles, signal_axis=sig_retaxis)
+                    signal_title=sig_rettitles,
+                    signal_axis=sig_retaxis)
         else:
             raise Exception('No recorded trace in buffer!')
 
