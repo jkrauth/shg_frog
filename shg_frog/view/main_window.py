@@ -17,6 +17,7 @@ import pyqtgraph as pg
 from . import general_worker
 from .roi_window import ROIGraphics
 from .retrieval_window import RetrievalGraphics
+from ..helpers.file_handler import DATA_DIR
 
 class MainWindow(QtWidgets.QMainWindow):
     """This is the main window of the GUI for the FROG interface.
@@ -266,9 +267,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def load_action(self):
         """ Open dialog to choose a measurement data to load. """
-        data_dir = pathlib.Path(__file__).parents[2] / 'Data'
-        load_dir = QtWidgets.QFileDialog.getExistingDirectory(self, \
-            'Select measurement folder', str(data_dir))
+        load_dir = QtWidgets.QFileDialog.getExistingDirectory(
+            self, 'Select measurement folder', str(DATA_DIR)
+            )
         # If user presses cancel, an empty string is returned.
         if load_dir == "":
             return
@@ -276,8 +277,10 @@ class MainWindow(QtWidgets.QMainWindow):
             plot_data = self.frog.load_measurement_data(pathlib.Path(load_dir))
             self.graphics_widget.update_graphics(2, plot_data)
         except FileNotFoundError:
-            print("Error: This directory does not contain the files " + \
-                "with the correct file names.")
+            print(
+                "Error: This directory does not contain the files " + \
+                "with the correct file names."
+                )
 
     def update_values(self):
         """Used for values which are continuously updated using QTimer"""
