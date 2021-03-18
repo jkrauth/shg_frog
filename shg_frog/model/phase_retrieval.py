@@ -1,10 +1,12 @@
 """
 Module that implements the phase retrieval algorithm used by the FROG software
+
+
 *********
 The realization of the GP (general projections) phase retrieval algorithm
-in here is based on the Matlab code from Steven Byrnes who wrote an extension
+used here is based on the Matlab code from Steven Byrnes who wrote an extension
 of Adam Wyatt's MATLAB FROG program. Various features include anti-aliasing
-algorithm.
+algorithm. The original MATLAB code underlies the following license:
 
 Copyright (c) 2012, Steven Byrnes
 Copyright (c) 2009, Adam Wyatt
@@ -23,17 +25,17 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *********
 
-
+*********
 The realization of the Ptychographic Reconstruction algorithm, also used in here
 is based on the paper of Sidorenko et al. (2016) and their Matlab implementation.
+*********
 
-Julian Krauth tranlated the code from Matlab into Python for the use in the
-shg_frog python package.
+Julian Krauth translated and adapted the original Matlab code pieces for the use
+in the shg_frog python package.
 
 File name: phase_retrieval.py
 Author: Julian Krauth
 Date created: 2019/11/27
-Python Version: 3.7
 """
 import pathlib
 import numpy as np
@@ -96,10 +98,52 @@ def shift_signal(sig_in: np.ndarray, shift: float, freq_axis: np.ndarray):
     sig_out = np.fft.ifft(sig_freq_domain * np.exp(1.j*2*np.pi*shift*freq_axis), axis=0)
     return sig_out
 
-def get_norm_intensity(field: np.ndarray) -> np.ndarray:
+def get_norm_intensity(pulse_field: np.ndarray) -> np.ndarray:
     """ Convert field to intensity and normalize such that max is 1. """
-    intensity = np.square(np.abs(field))
+    intensity = np.square(np.abs(pulse_field))
     return intensity/np.amax(intensity)
+
+def get_fwhm(intensity: np.ndarray, axis: np.ndarray) -> float:
+    """ Calculates FWHM of a signal in units of the given axis.
+    This function uses interpolation between data points and a threshold approach.
+    No fitting, since this would be less robust for general pulse shapes.
+    Arguments:
+    intensity -- Array with intensity information of a pulse
+    axis -- Array with time information of a pulse
+    Returns:
+    float -- full width half maximum value"""
+    threshold = np.amax(intensity)/2
+    step_size = axis[1]-axis[0]
+    # Get indices of values that are above half the maximum
+    indices = np.nonzero(intensity>threshold)[0]
+    # Since the resolution is low, we do some geometry (interpolating):
+    ## Interpolate the left side
+    index_before_threshold = indices[0] - 1
+    index_right_after = indices[0]
+    left_delta = step_size\
+        *(threshold-intensity[index_before_threshold])\
+            /(intensity[index_right_after]-intensity[index_before_threshold])
+    left_side = axis[index_before_threshold] + left_delta
+    ## Interpolate the right side
+    index_after_threshold = indices[-1] + 1
+    index_right_before = indices[-1]
+    right_delta = step_size*(threshold-intensity[index_right_before])\
+        /(intensity[index_after_threshold]-intensity[index_right_before])
+    right_side = axis[index_right_before] + right_delta
+    ## Get the difference
+    fwhm = right_side - left_side
+    return fwhm
+
+def print_started_message():
+    print('Reconstruction started...')
+
+def print_finished_message():
+    print('Phase retrieval finished!')
+
+def print_iter_update(index: int, frog_error: float):
+    """ print the current iteration index and error to the terminal. """
+    print(f'Iteration:{index:3d}  Error={frog_error:.4f}')
+
 
 class PhaseRetrieval:
     """
@@ -176,8 +220,9 @@ class PhaseRetrieval:
 
         # Maximum number of iterations allowed
         self.max_iter = max_iter
-        # Initial guess for Pt. Default: None (Choose randomly)
-        self.seed = None
+        # Mode for initial guess for the pulse electric field.
+        # Possible values are "autocorr", "gauss", "custom"
+        self._seed_mode = "autocorr"
         # Tolerance on the error
         self.GTol = GTol
         # 0: No updates while solving. 1: Output movie. 2: Print text.
@@ -216,18 +261,40 @@ class PhaseRetrieval:
         if dummy==2:
             self.setFccd(val)
 
-
-
     def load_seed(self, path: pathlib.Path):
-        """
-        Load a custom seed for the retrieval from a file
+        """ Load a custom seed for the retrieval from a file
         and put it into the seed attribute.
+        Real and Imaginary part need to be in 2 space-separated columns.
         """
-        # file was originally loaded from 'seed/seed.input'
-        seed_real, seed_imag = np.loadtxt(path, unpack=True)
-        seed = seed_real + 1j * seed_imag
-        self.seed = seed.reshape(self.prep_size, 1)
+        self.seed = np.loadtxt(path).view(complex)
 
+    def save_seed(self, path: pathlib.Path):
+        """ Takes the electric field of the reconstructed pulse
+        and writes it to file.
+        Real and Imaginary part are written into 2 space-separated columns.
+        """
+        np.savetxt(path, self.Pt.view(float).reshape(-1, 2))
+
+    def get_seed(self, mode: str=None, frog: np.ndarray=None) -> np.ndarray:
+        """ Returns a seed function according to the self._seed_mode
+        attribute.
+        """
+        if mode == None: mode = self._seed_mode
+        if frog is not None and mode == "autocorr":
+            # Sum over frequency axis yields the initial guess for the algorithm.
+            # This corresponds to the intensity autocorrelation of the pulse.
+            seed = np.sum(frog, axis=0) \
+                / np.sqrt(np.sum(np.abs( np.sum(frog, axis=0) )**2))
+            return seed.reshape(-1, 1)
+        if mode == "gauss":
+            N = self.prep_size
+            seed = (np.exp(
+                -2. * np.log(2.) * np.square( (np.arange(0, N) - N/2.) / (N/10.) )
+                ) * np.exp(0.1*2.*np.pi*1.j*np.random.rand(1, N)))
+            return seed.reshape(-1, 1)
+        if mode == "custom":
+            pass
+        raise ValueError
 
 
     def prepFROG(
@@ -237,7 +304,8 @@ class PhaseRetrieval:
         ccdimg: np.ndarray=None,
         showprogress: int=0,
         showautocor: int=0,
-        flip: int=2):
+        flip: int=2,
+    ):
         """
         prepFROG: Cleans, smooths, and downsamples data in preparation for
         running the FROG algorithm on it.
@@ -376,7 +444,7 @@ class PhaseRetrieval:
         # Want an NxN pixel image to process. Go through each pixel of the
         # original, and have it contribute to the nearest pixel of the final
         # (in an average).
-        if(np.shape(ccdimg)==(self.prep_size, self.prep_size) and ccddt * ccddv == 1./float(self.prep_size)):
+        if(ccdimg.shape==(self.prep_size, self.prep_size) and ccddt * ccddv == 1./self.prep_size):
             # Skip downsampling if ccdimg is already sampled correctly.
             fnlimg = ccdimg
             fnldt = ccddt
@@ -593,7 +661,7 @@ class PhaseRetrieval:
             else:             # SVD method (does not work???)
                 U, S, V = np.linalg.svd(EF)
                 Pt = U[:,0]
-                Pt = Pt.reshape(N,1)
+                Pt = Pt.reshape(N, 1)
 
             # Normalize to Euclidean norm 1
             Pt = Pt / np.linalg.norm(Pt)
@@ -668,7 +736,7 @@ class PhaseRetrieval:
         signal_axis --
         """
 
-        print('Retrieve pulse...')
+        print_started_message()
 
         if Fm is None:
             if int(np.sum(self.Fm)) != 0:
@@ -708,19 +776,20 @@ class PhaseRetrieval:
         vplotrange = [np.min(vpxls), np.max(vpxls)]
 
 
-        # Make a randam guess for a seed if no external seed has been loaded.
-        if self.seed is None:
-            # Generate initial guess of gate and pulse from noise times
-            # a gaussian envelope function. Don't use complex phase 0 or
-            # it gets stuck in real numbers, but don't let the complex
-            # phase vary too much or it has aliasing problems.
-            Pt = (np.exp(
-                -2. * np.log(2.) * np.square( (np.arange(0, N) - N/2.) / (N/10.) )
-                ) * np.exp(0.1*2.*np.pi*1.j*np.random.rand(1, N)))
-            # Used as a vertical array
-            Pt = Pt.reshape(N, 1)
-        else:
-            Pt = self.seed
+        # # Make a randam guess for a seed if no external seed has been loaded.
+        Pt = self.get_seed("gauss")
+        # if self.seed is None:
+        #     # Generate initial guess of gate and pulse from noise times
+        #     # a gaussian envelope function. Don't use complex phase 0 or
+        #     # it gets stuck in real numbers, but don't let the complex
+        #     # phase vary too much or it has aliasing problems.
+        #     Pt = (np.exp(
+        #         -2. * np.log(2.) * np.square( (np.arange(0, N) - N/2.) / (N/10.) )
+        #         ) * np.exp(0.1*2.*np.pi*1.j*np.random.rand(1, N)))
+        #     # Used as a vertical array
+        #     Pt = Pt.reshape(N, 1)
+        # else:
+        #     Pt = self.seed
 
         # Normalize FROG trace to unity max intensity
         Fm = Fm/np.amax(Fm)
@@ -792,7 +861,8 @@ class PhaseRetrieval:
             # Keep count of no. of iterations
             iteration += 1
             if mov==2:
-                print(f"Iteration number: {iteration} Error: {G:.04f}")
+                print_iter_update(iteration, G)
+                # print(f"Iteration number: {iteration} Error: {G:.04f}")
 
             # Check method to use. Have to run this inside the loop because method
             # may vary depending on iter.
@@ -820,7 +890,7 @@ class PhaseRetrieval:
                     np.sum(
                         np.arange(1, N+1).reshape(N, 1) * np.absolute(np.power(Pt, 4))
                         ) / np.sum(np.absolute(np.power(Pt, 4))))
-                Pt = np.roll(Pt,-int(np.round(centerindex-N/2.)))
+                Pt = np.roll(Pt, -int(np.round(centerindex-N/2.)))
 
             # Make a FROG trace from new fields
             Fr, EFr = self.makeFROG(Pt, makeFROGdomain, makeFROGantialias)
@@ -830,8 +900,7 @@ class PhaseRetrieval:
             Fr = Fr * calc_alpha(Fm, Fr)
             G = rms_diff(Fm, Fr)
 
-            print(f"Iter. {iteration:3}: FROG Error {G:.4f}")
-
+            print_iter_update(iteration, G)
 
             # Create plotting data
             # time domain
@@ -867,17 +936,15 @@ class PhaseRetrieval:
         # Save the complex electric field for test purpose
         #np.savetxt('seed/seed_new.input', np.column_stack([Pt.real, Pt.imag]))
 
-        # Save reconstructed FROG trace in attribute
+        # Save reconstructed FROG trace in attributes
         self.Pt = Pt
         self.Fr = Fr
-        print('Phase retrieval finished!')
+        print_finished_message()
 
+        intensity = get_norm_intensity(Pt.reshape(N,))
+        print(f'Pulse width: {get_fwhm(intensity, tpxls):.3f} ps.')
 
-        if __name__ == '__main__':
-            import sys
-            if (sys.flags.interactive != 1) or not hasattr(QtCore, 'PYQT_VERSION'):
-                QtGui.QApplication.instance().exec_()
-
+        return Pt, G, Fr
 
     def ePIE_fun_FROG(
         self, I: np.ndarray=None, dt: np.ndarray=None, df: np.ndarray=None,
@@ -930,11 +997,13 @@ class PhaseRetrieval:
         assert F.shape == (n_freq, 1)
         assert F.dtype == np.dtype('float64')
 
+        Obj = self.get_seed(mode="autocorr", frog=I)
+
         # Sum over frequency axis yields the initial guess for the algorithm.
         # This corresponds to the intensity autocorrelation of the pulse.
-        Obj = np.sum(I, axis=0) \
-            / np.sqrt(np.sum(np.abs( np.sum(I, axis=0) )**2))
-        Obj = Obj.reshape(K, 1)
+        # Obj = np.sum(I, axis=0) \
+            # / np.sqrt(np.sum(np.abs( np.sum(I, axis=0) )**2))
+        # Obj = Obj.reshape(K, 1)
         # Use Gaussian
         # Obj = (np.exp(
         #     -2. * np.log(2.) * np.square( (np.arange(0, N) - N/2.) / (N/10.) )
@@ -956,6 +1025,8 @@ class PhaseRetrieval:
         if signal_data is not None and signal_label is not None:
             signal_data.emit(0, I)
             signal_label.emit(self.units)
+
+        print_started_message()
 
         i = 1
         while error > self.GTol and i <= self.max_iter:
@@ -994,11 +1065,11 @@ class PhaseRetrieval:
                 Obj = Obj +  Corr1 + Corr2
                 Ir[:, s[iterK]] = np.abs( np.fft.fftshift( np.fft.fft(Obj * temp, axis=0)/N ) )[:,0]
 
-
                 if iterK % K == 0:
                     error = np.sqrt(np.sum(np.abs( Ir[np.fft.fftshift(Fsupp),:] - I[np.fft.fftshift(Fsupp),:] )**2 )) \
                         / np.sqrt(np.sum(np.abs(I[np.fft.fftshift(Fsupp),:] )**2 ))
-                    print(f'Iter:{i:3d}  IterK:{iterK}  alpha={alpha:.4f} Error={error:.4f}')
+                    #print(f'Iter:{i:3d}  IterK:{iterK}  alpha={alpha:.4f} Error={error:.4f}')
+                    print_iter_update(i, error)
 
                     if signal_data is not None and signal_title is not None:
                         # Prepare and send data for plotting
@@ -1011,10 +1082,15 @@ class PhaseRetrieval:
                         signal_title.emit(i, error)
 
             i += 1
-        # Save as seed.
-        # np.savetxt('seed_ptych.input', Obj.view(float).reshape(-1, 2))
-        self.Pt = Obj
+
+
         self.Fr = Ir
+        self.Pt = Obj
+        print_finished_message()
+
+        intensity = get_norm_intensity(Obj.reshape(N,))
+        print(f'Pulse width: {get_fwhm(intensity, D):.3f} ps.')
+
         return Obj, error, Ir
 
 
@@ -1026,19 +1102,24 @@ if __name__ == '__main__':
 
     # make Phase retrieval instance
     pr = PhaseRetrieval()
+    pr.max_iter = 50
     trace = np.array(imageio.imread(data_path / 'prep_frog.tiff')).astype('float64')
     with open(data_path / 'prep_meta.yml', 'r') as f:
         meta = yaml.load(f, Loader=yaml.FullLoader)
     dt = meta['ccddt']
     dF = meta['ccddv']
+    t = make_axis(128, dt)
 
     #pr.prepFROG(ccddt=dt, ccddv=dF, ccdimg=trace)
-    field, error, frog_reconstructed = pr.ePIE_fun_FROG(I=trace, dt=dt, df=dF)
+    pr.load_seed(data_path / 'seed')
+    field, error, frog_reconstructed = pr.retrievePhase(Fm=trace, dtperpx=dt)
+    #field, error, frog_reconstructed = pr.ePIE_fun_FROG(I=trace, dt=dt, df=dF)
+    #pr.save_seed(data_path / 'seed')
     plt.figure('Frog reconstructed')
     plt.imshow(frog_reconstructed)
     plt.figure('amplitude')
-    plt.plot(np.abs(field*field.conjugate()))
-    plt.plot(np.unwrap(np.angle(field), axis=0))
+    plt.plot(t, 2*np.pi*get_norm_intensity(field.reshape(128,)))
+    plt.plot(t, np.angle(field)+np.pi)
     plt.show()
 
 
@@ -1073,8 +1154,8 @@ if __name__ == '__main__':
     ##p4p2= p4.plot(vpxls,np.zeros(N),pen=(0,255,0))
     #win.show()
 
-    pr.prepFROG(showprogress=1,showautocor=1)
-    pr.retrievePhase(mov=1)
+    #pr.prepFROG(showprogress=1,showautocor=1)
+    #pr.retrievePhase(mov=1)
 
     #im = plt.imshow(pr.Fm,cmap='hot')
     #plt.colorbar(im, orientation='horizontal')
