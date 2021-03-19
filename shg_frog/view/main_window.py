@@ -17,7 +17,7 @@ import pyqtgraph as pg
 from . import general_worker
 from .roi_window import ROIGraphics
 from .retrieval_window import RetrievalGraphics
-from ..helpers.file_handler import DATA_DIR
+from ..helpers.file_handler import DATA_DIR, INTERNAL_DATA_DIR
 
 class MainWindow(QtWidgets.QMainWindow):
     """This is the main window of the GUI for the FROG interface.
@@ -276,8 +276,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def load_test_trace(self):
         """ Load the test trace """
-        path = pathlib.Path(__file__).parents[1] / "data"
-        plot_data = self.frog.load_measurement_data(path)
+        plot_data = self.frog.load_measurement_data(INTERNAL_DATA_DIR)
         self.graphics_widget.update_graphics(2, plot_data)
 
     def load_action(self):

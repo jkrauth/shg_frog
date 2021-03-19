@@ -2,10 +2,10 @@
 Responsible for loading from files and saving to files.
 """
 from time import strftime
-
 import pathlib
-import yaml
 import pickle
+
+import yaml
 import imageio
 import numpy as np
 
@@ -16,6 +16,7 @@ HOME_DIR = pathlib.Path.home()
 # These folders will be created if not existent.
 CONFIG_DIR = HOME_DIR / ".frog_config"
 DATA_DIR = HOME_DIR / "frog_data"
+INTERNAL_DATA_DIR = pathlib.Path(__file__).parents[1] / 'data'
 
 
 DEFAULT_CONFIG = {
@@ -52,6 +53,7 @@ class FileHandler:
     name_config = 'config.yml'
     name_seed = 'seed.dat'
     name_parameters = 'params.pl'
+    name_default_params = 'params.default'
 
     def _get_new_measurement_path(self) -> pathlib.Path:
         """Returns a path for the next measurement."""
@@ -106,7 +108,7 @@ class FileHandler:
         with open(CONFIG_DIR / self.name_parameters, 'wb') as f:
             pickle.dump(param_state, f)
 
-    def load_settings(self):
+    def load_last_settings(self):
         """ Returns the pyqtgraph Parametertree state object """
         try:
             with open(CONFIG_DIR / self.name_parameters, 'rb') as f:
@@ -114,6 +116,13 @@ class FileHandler:
         except FileNotFoundError:
             print('No previously saved settings found.')
             return None
+
+    def load_parameters(self):
+        """ Returns the pyqtgraph Parameters for creating a tree.
+        The file with the parameter dict is part of the package.
+        """
+        with open(INTERNAL_DATA_DIR / self.name_default_params, 'r') as f:
+            return yaml.load(f, Loader=yaml.FullLoader)
 
     def get_measurement_data(self, measurement_path: pathlib.Path) -> Data:
         """ Get config, settings (meta), and image data of an old measurement. """

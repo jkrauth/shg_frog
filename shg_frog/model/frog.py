@@ -227,75 +227,13 @@ class FrogParams:
         self._sensor_width = sensor_width
         self._sensor_height = sensor_height
 
-        # Define parameters and their properties
-        # For a list of possible options see here:
-        # https://pyqtgraph.readthedocs.io/en/latest/_modules/pyqtgraph/widgets/SpinBox.html
-        params = [
-            {'name':'Phase Retrieval', 'type':'group', 'visible':True, 'children': [
-                {'name':'prepFROG Size', 'type': 'int', 'value': 128, 'compactHeight': False},
-                {'name':'Algorithm', 'type': 'list', 'values': {"GP":"GP", "Ptychographic":"PT"}, 'value':"GP"},
-                {'name':'Seed', 'type': 'list', 'values': {"Gauss":"gauss", "Autocorr":"autocorr", "Custom":"custom"}, 'value':"autocorr"},
-                {'name':'Max. Iterations', 'type': 'int', 'value': 200, 'compactHeight': False},
-                {'name':'G Tolerance', 'type': 'float', 'value': 0.001, 'compactHeight': False}
-            ]},
-            {'name':'ANDO Spectrometer', 'type':'group', 'visible':False, 'children': [
-                {'name':'Center', 'type': 'float', 'value': 390.},
-                {'name':'Span', 'type': 'float', 'value': 20.},
-                {'name':'CW mode', 'type': 'bool', 'value': True},
-                {'name':'Rep. time', 'type': 'float', 'value': 36},
-                {'name':'Sampling', 'type': 'int', 'value': 201}
-            ]},
-            {'name':'Camera', 'type':'group', 'visible':False, 'children': [
-                {'name':'Exposure', 'type': 'float', 'value': 0.036, 'dec': True, \
-                    'step': 1, 'siPrefix': True, 'suffix': 's', 'compactHeight': False},
-                {'name':'Gain', 'type': 'float', 'value': 0, 'dec': False, 'step': 1,\
-                     'compactHeight': False},
-                {'name':'Crop Image', 'type': 'group', 'expanded':False, 'children': [
-                    {'name':'Width','type':'int', \
-                        'value': 600,'limits':[1, sensor_width],'step': 2, 'compactHeight': False},
-                    {'name':'Height','type':'int', \
-                        'value': 10,'limits':[1, sensor_height],'step': 2, 'compactHeight': False},
-                    {'name':'Xpos','type':'int','value': 400,'step': 2, 'compactHeight': False},
-                    {'name':'Ypos','type':'int','value': 470,'step': 2, 'compactHeight': False}
-                ]},
-                {'name':'Trigger', 'type': 'group', 'children': [
-                    {'name':'Mode','type':'list','visible':False, \
-                        'values': {"On":1,"Off":0},'value':1},
-                    {'name':'Source','type':'list','visible':True, \
-                        'values': {
-                            "Freerun":'Freerun',
-                            "External":'Line1'
-                            #'Line2':'Line2',
-                            #'FixedRate':'FixedRate',
-                            #'Software':'Software'
-                        },'value':'External'}
-                ]},
-                {'name':'PixelFormat', 'type': 'list', \
-                    'values': {
-                        'Mono8':'Mono8',
-                        'Mono12':'Mono12'
-                        #'Mono12Packed':'Mono12Packed'
-                    }, 'value':'Mono8'},
-                ]},
-            {'name':'Stage', 'type':'group', 'visible':False, 'children': [
-                {'name':'Position', 'type':'float', 'value': 0., 'readonly': True, \
-                    'suffix': 'um'},
-                {'name':'GoTo', 'type':'float', 'value': 0., 'suffix': 'um', \
-                    'compactHeight': False},
-                {'name':'Offset', 'type':'float', 'value': 11370, 'limits':[0,25000], \
-                    'suffix': 'um', 'compactHeight': False},
-                {'name':'Start Position', 'type':'float', 'value': -256, 'suffix': 'um', \
-                    'compactHeight': False},
-                {'name':'Step Size', 'type':'float', 'value': 4., 'suffix': 'um', \
-                    'compactHeight': False},
-                {'name':'Number of steps', 'type':'int', 'readonly':True, 'value': 128}
-            ]}
-        ]
-
         # Create parameter objects
-        self.par = Parameter.create(name='params',
-                              type='group',
-                              children=params)
+        self.par = Parameter.create(
+            name='params',
+            type='group',
+            # children=params,
+            children=FileHandler().load_parameters(),
+            )
 
 
         ### Some settings regarding CCD parameters ###
@@ -335,7 +273,7 @@ class FrogParams:
 
     def restore_state(self):
         """ Load previously save parameter tree settings from file. """
-        settings = FileHandler().load_settings()
+        settings = FileHandler().load_last_settings()
         if settings is not None:
             self.par.restoreState(settings)
 
