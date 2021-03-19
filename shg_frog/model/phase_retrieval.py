@@ -264,7 +264,8 @@ class PhaseRetrieval:
 
     def set_seed_mode(self, mode: str):
         """ Choose what seed is used in the retrieval. """
-        if mode in set("autocorr", "gauss", "custom"):
+        if mode in set(["autocorr", "gauss", "custom"]):
+            print(f"Set mode to '{mode}'")
             self._seed_mode = mode
         else:
             raise ValueError(f"mode={mode} is not a valid value.")
@@ -783,11 +784,12 @@ class PhaseRetrieval:
         vplotrange = [np.min(vpxls), np.max(vpxls)]
 
 
-        # # Make a randam guess for a seed if no external seed has been loaded.
-        Pt = self.get_seed(mode="gauss")
-
         # Normalize FROG trace to unity max intensity
         Fm = Fm/np.amax(Fm)
+
+        # # Make a randam guess for a seed if no external seed has been loaded.
+        # Pt = self.get_seed(mode="gauss")
+        Pt = self.get_seed(frog=Fm)
 
         ###################
         # Start main part #
@@ -992,7 +994,8 @@ class PhaseRetrieval:
         assert F.shape == (n_freq, 1)
         assert F.dtype == np.dtype('float64')
 
-        Obj = self.get_seed(mode="autocorr", frog=I)
+        # Obj = self.get_seed(mode="autocorr", frog=I)
+        Obj = self.get_seed(frog=I)
 
         # del1 = 1e-3
         # del2 = 2e-6

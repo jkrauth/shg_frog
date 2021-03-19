@@ -234,7 +234,7 @@ class FrogParams:
             {'name':'Phase Retrieval', 'type':'group', 'visible':True, 'children': [
                 {'name':'prepFROG Size', 'type': 'int', 'value': 128, 'compactHeight': False},
                 {'name':'Algorithm', 'type': 'list', 'values': {"GP":"GP", "Ptychographic":"PT"}, 'value':"GP"},
-                # {'name':'Seed', 'type': 'list', 'values': {"Random":0, "fromFile":1}, 'value':0},
+                {'name':'Seed', 'type': 'list', 'values': {"Gauss":"gauss", "Autocorr":"autocorr", "Custom":"custom"}, 'value':"autocorr"},
                 {'name':'Max. Iterations', 'type': 'int', 'value': 200, 'compactHeight': False},
                 {'name':'G Tolerance', 'type': 'float', 'value': 0.001, 'compactHeight': False}
             ]},

@@ -160,6 +160,8 @@ class MainWindow(QtWidgets.QMainWindow):
         retrieval_par = self.par.child('Phase Retrieval')
         size_par = retrieval_par.child('prepFROG Size')
         size_par.sigValueChanged.connect(lambda _, val: self.frog.algo.set_size(val))
+        iter_seed_par = retrieval_par.child('Seed')
+        iter_seed_par.sigValueChanged.connect(lambda _, val: self.frog.algo.set_seed_mode(val))
         iter_max_par = retrieval_par.child('Max. Iterations')
         iter_max_par.sigValueChanged.connect(lambda _, val: self.frog.algo.set_max_iterations(val))
         tolerance_par = retrieval_par.child('G Tolerance')
