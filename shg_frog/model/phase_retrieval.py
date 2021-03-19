@@ -42,8 +42,9 @@ import numpy as np
 import imageio
 import yaml
 
-from pyqtgraph.Qt import QtGui, QtCore
 import pyqtgraph as pg
+
+from ..helpers.file_handler import FileHandler
 
 
 def rms_diff(F1: np.ndarray, F2: np.ndarray) -> float:
@@ -80,7 +81,6 @@ def make_axis(length: int, step: float) -> np.ndarray:
     """
     axis = np.arange(-length/2 * step, length/2*step, step)
     return axis
-
 
 def shift_signal(sig_in: np.ndarray, shift: float, freq_axis: np.ndarray):
     """
@@ -161,6 +161,7 @@ class PhaseRetrieval:
     - makeFROG()
     - guessPusle()
     """
+
     def __init__(
         self,
         max_iter: int=200,
@@ -261,25 +262,19 @@ class PhaseRetrieval:
         if dummy==2:
             self.setFccd(val)
 
-    def load_seed(self, path: pathlib.Path):
-        """ Load a custom seed for the retrieval from a file
-        and put it into the seed attribute.
-        Real and Imaginary part need to be in 2 space-separated columns.
-        """
-        self.seed = np.loadtxt(path).view(complex)
-
-    def save_seed(self, path: pathlib.Path):
-        """ Takes the electric field of the reconstructed pulse
-        and writes it to file.
-        Real and Imaginary part are written into 2 space-separated columns.
-        """
-        np.savetxt(path, self.Pt.view(float).reshape(-1, 2))
+    def set_seed_mode(self, mode: str):
+        """ Choose what seed is used in the retrieval. """
+        if mode in set("autocorr", "gauss", "custom"):
+            self._seed_mode = mode
+        else:
+            raise ValueError(f"mode={mode} is not a valid value.")
 
     def get_seed(self, mode: str=None, frog: np.ndarray=None) -> np.ndarray:
         """ Returns a seed function according to the self._seed_mode
         attribute.
         """
-        if mode == None: mode = self._seed_mode
+        if mode is None:
+            mode = self._seed_mode
         if frog is not None and mode == "autocorr":
             # Sum over frequency axis yields the initial guess for the algorithm.
             # This corresponds to the intensity autocorrelation of the pulse.
@@ -287,14 +282,26 @@ class PhaseRetrieval:
                 / np.sqrt(np.sum(np.abs( np.sum(frog, axis=0) )**2))
             return seed.reshape(-1, 1)
         if mode == "gauss":
+            # Generate initial guess of gate and pulse from noise times
+            # a gaussian envelope function. Don't use complex phase 0 or
+            # it gets stuck in real numbers, but don't let the complex
+            # phase vary too much or it has aliasing problems.
             N = self.prep_size
             seed = (np.exp(
                 -2. * np.log(2.) * np.square( (np.arange(0, N) - N/2.) / (N/10.) )
                 ) * np.exp(0.1*2.*np.pi*1.j*np.random.rand(1, N)))
             return seed.reshape(-1, 1)
         if mode == "custom":
-            pass
+            # Loading a seed array that was the result of a measurement
+            # and has been saved at some point.
+            return FileHandler().load_seed()
         raise ValueError
+
+    def save_pulse_as_seed(self):
+        """ Save the last retrieved pulse as seed for another
+        retrieval.
+        """
+        FileHandler().save_seed(self.Pt)
 
 
     def prepFROG(
@@ -777,19 +784,7 @@ class PhaseRetrieval:
 
 
         # # Make a randam guess for a seed if no external seed has been loaded.
-        Pt = self.get_seed("gauss")
-        # if self.seed is None:
-        #     # Generate initial guess of gate and pulse from noise times
-        #     # a gaussian envelope function. Don't use complex phase 0 or
-        #     # it gets stuck in real numbers, but don't let the complex
-        #     # phase vary too much or it has aliasing problems.
-        #     Pt = (np.exp(
-        #         -2. * np.log(2.) * np.square( (np.arange(0, N) - N/2.) / (N/10.) )
-        #         ) * np.exp(0.1*2.*np.pi*1.j*np.random.rand(1, N)))
-        #     # Used as a vertical array
-        #     Pt = Pt.reshape(N, 1)
-        # else:
-        #     Pt = self.seed
+        Pt = self.get_seed(mode="gauss")
 
         # Normalize FROG trace to unity max intensity
         Fm = Fm/np.amax(Fm)
@@ -999,19 +994,6 @@ class PhaseRetrieval:
 
         Obj = self.get_seed(mode="autocorr", frog=I)
 
-        # Sum over frequency axis yields the initial guess for the algorithm.
-        # This corresponds to the intensity autocorrelation of the pulse.
-        # Obj = np.sum(I, axis=0) \
-            # / np.sqrt(np.sum(np.abs( np.sum(I, axis=0) )**2))
-        # Obj = Obj.reshape(K, 1)
-        # Use Gaussian
-        # Obj = (np.exp(
-        #     -2. * np.log(2.) * np.square( (np.arange(0, N) - N/2.) / (N/10.) )
-        #     ) * np.exp(0.1*2.*np.pi*1.j*np.random.rand(1, N)))
-        # Obj = Obj.reshape(K,1)
-        # Load seed
-        #Obj = np.loadtxt('seed_ptych.input').view(complex).reshape(-1).reshape(N, 1)
-
         # del1 = 1e-3
         # del2 = 2e-6
         error = 1
@@ -1114,7 +1096,7 @@ if __name__ == '__main__':
     pr.load_seed(data_path / 'seed')
     field, error, frog_reconstructed = pr.retrievePhase(Fm=trace, dtperpx=dt)
     #field, error, frog_reconstructed = pr.ePIE_fun_FROG(I=trace, dt=dt, df=dF)
-    #pr.save_seed(data_path / 'seed')
+    #FileHandler().save_seed(field)
     plt.figure('Frog reconstructed')
     plt.imshow(frog_reconstructed)
     plt.figure('amplitude')

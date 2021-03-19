@@ -16,6 +16,7 @@ HOME_DIR = pathlib.Path.home()
 CONFIG_DIR = HOME_DIR / ".frog_config"
 DATA_DIR = HOME_DIR / "frog_data"
 
+
 DEFAULT_CONFIG = {
     "camera model": "Manta G-234B NIR",
     "camera id": "DEV_000F314E1E59", # Necessary to select the camera
@@ -29,33 +30,33 @@ DEFAULT_CONFIG = {
 }
 
 
+def get_unique_path(directory: pathlib.Path, name_pattern: str) -> pathlib.Path:
+    """ Creates a unique path with a given pattern, using integer numbering.
+    Arguments:
+    directory -- pathlib.Path, path to where numbered folders should be
+    name_pattern -- str, name of the folder, containing the curly format brackets for numbering.
+    """
+    counter = 0
+    while True:
+        counter += 1
+        path = directory / name_pattern.format(counter)
+        if not path.exists():
+            return path
+
+
 class FileHandler:
     """ Saving and loading data into and from files. """
-    def __init__(self):
-        self.name_meta = 'meta.yml'
-        self.name_frog = 'frog.tiff'
-        self.name_config = 'config.yml'
+    name_meta = 'meta.yml'
+    name_frog = 'frog.tiff'
+    name_config = 'config.yml'
+    name_seed = 'seed.dat'
 
     def _get_new_measurement_path(self) -> pathlib.Path:
         """Returns a path for the next measurement."""
         today = strftime("%Y%m%d")
         today_path = DATA_DIR / today
-        new_path = self.get_unique_path(today_path, 'measurement_{:03d}')
+        new_path = get_unique_path(today_path, 'measurement_{:03d}')
         return new_path
-
-    @staticmethod
-    def get_unique_path(directory: pathlib.Path, name_pattern: str) -> pathlib.Path:
-        """ Creates a unique path with a given pattern, using integer numbering.
-        Arguments:
-        directory -- pathlib.Path, path to where numbered folders should be
-        name_pattern -- str, name of the folder, containing the curly format brackets for numbering.
-        """
-        counter = 0
-        while True:
-            counter += 1
-            path = directory / name_pattern.format(counter)
-            if not path.exists():
-                return path
 
     def save_new_measurement(self, data: Data, config: dict):
         """ Saves data and configuration into a new measurement folder
@@ -108,3 +109,23 @@ class FileHandler:
         #with open(measurement_path / self.name_config, 'r') as f:
         #    config = yaml.load(f, Loader=yaml.FullLoader)
         return data
+
+    def load_seed(self) -> np.ndarray:
+        """ For the use in the phase retrieval module.
+        Load a custom seed for the retrieval class from a file
+        Real and Imaginary part need to be in 2 space-separated columns.
+        Returns:
+        vertical complex array, that can be used as a seed array.
+        """
+        return np.loadtxt(CONFIG_DIR / self.name_seed).view(complex).reshape(-1, 1)
+
+    def save_seed(self, seed: np.ndarray):
+        """ For the use in the phase retrieval module
+        Takes the electric field of the reconstructed pulse
+        and writes it to a file.
+        Real and Imaginary part are written into 2 space-separated columns.
+        Argument:
+        seed -- vertical complex numpy array: the complex field of a
+                retrieved pulse.
+        """
+        np.savetxt(CONFIG_DIR / self.name_seed, seed.view(float).reshape(-1, 2))
