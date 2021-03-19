@@ -37,10 +37,7 @@ File name: phase_retrieval.py
 Author: Julian Krauth
 Date created: 2019/11/27
 """
-import pathlib
 import numpy as np
-import imageio
-import yaml
 
 import pyqtgraph as pg
 
@@ -167,16 +164,13 @@ class PhaseRetrieval:
         max_iter: int=200,
         prep_size: int=128,
         GTol: float=0.001,
-        folder: str='out_test/',
-        fm_name: str='frog_meas'):
-
-        # Names and type of FROG trace files
-        self.ftype = '.tiff' # Use tiff, because of 16bit capabilities
-        self.fm_name = folder + fm_name # Original measured trace
-        self.fp_name = folder + 'frog_prep' # Preparated trace
-        self.fr_name = folder + 'frog_reco' # Reconstructed trace
-
-
+    ):
+        """
+        Arguments:
+        max_iter: maximum of iterations for the algorithm
+        prep_size: size of the frog traces prepared by prepfrog()
+        GTol: tolerance level to stop a reconstruction.
+        """
         ### Parameters used by prepFROG ###
 
         # Pixel number of preparated FROG trace, which will be used by
@@ -307,9 +301,9 @@ class PhaseRetrieval:
 
     def prepFROG(
         self,
-        ccddt: float=None,
-        ccddv: float=None,
-        ccdimg: np.ndarray=None,
+        ccddt: float,
+        ccddv: float,
+        ccdimg: np.ndarray,
         showprogress: int=0,
         showautocor: int=0,
         flip: int=2,
@@ -317,37 +311,14 @@ class PhaseRetrieval:
         """
         prepFROG: Cleans, smooths, and downsamples data in preparation for
         running the FROG algorithm on it.
-        The following attributes have to be set before using this method:
-        self.ccddt
-        self.ccddv
-        self.prep_size
+        In the end it saves the time steps per pixel into self.dtperpx
+        and the prepared frog trace into self.Fm
+        Arguments:
+        ccddt -- time step per pixel
+        ccddv -- frequency step per pixel
+        ccdimg -- frog trace, frequencies on axis 0, delays on axis 1.
         """
         print('Prepare FROG trace...')
-
-        #if ccddt is None: ccddt = self.ccddt
-        #if ccddv is None: ccddv = self.ccddv
-        if ccdimg is None:
-            if False:
-            # if self.Fccd is not None:
-                print("Read data from memory")
-                ccdimg = self.Fccd
-                ccddt = self.ccddt
-                ccddv = self.ccddv
-            else:
-                print(f"Read data from file {self.fm_name}{self.ftype}")
-                ccdimg = imageio.imread(self.fm_name+self.ftype)
-                with open(self.fm_name+'.yml', 'r') as f:
-                    properties = yaml.load(f)
-                #ccdd = np.loadtxt(self.fm_name+'.txt')
-                ccddt = properties['ccddt']
-                ccddv = properties['ccddv']
-                if ccdimg.ndim==3:
-                    ccdimg = ccdimg[:,:,0]
-                ccdimg = np.asarray(ccdimg,dtype=np.float64)
-                # Set also value of attribute
-                #self.Fccd = ccdimg
-                #self.ccddt = ccddt
-                #self.ccddv = ccddv
 
         # ccddtdv = ccddt * ccddv, with units of "cycles per horizontal-pixel
         # per vertical-pixel". This product ccddtdv is an important parameter
@@ -504,15 +475,6 @@ class PhaseRetrieval:
 
         if showprogress or showautocor:
             plt.show()
-
-        if 0: # Save prepFROG image
-            fnlimg = np.rint(fnlimg * 65535 / np.amax(fnlimg))
-            #fnlimg = fnlimg * 255 / np.amax(fnlimg)
-            #print np.amax(fnlimg)
-            fnlimg = np.asarray(fnlimg, dtype=np.uint16)
-            imageio.imsave('prep_frog.tiff', fnlimg)
-
-
 
 
 
@@ -727,7 +689,7 @@ class PhaseRetrieval:
 
 
     def retrievePhase(
-        self, Fm: np.ndarray=None, mov: int=0, dtperpx: float=None, # Will be set by prepFROG
+        self, Fm: np.ndarray=None, dtperpx: float=None, # Will be set by prepFROG
         units=None, signal_data=None, signal_label=None, signal_title=None,
         signal_axis=None):
         """
@@ -735,7 +697,6 @@ class PhaseRetrieval:
         This method makes use of makeFROG and prepFROG.
         Arguments:
         Fm -- prepared frog trace from prepFROG
-        mov -- 1: show plot while running
         dtperpx -- time step between pixels
         units --
         signal_data --
@@ -747,14 +708,7 @@ class PhaseRetrieval:
         print_started_message()
 
         if Fm is None:
-            if int(np.sum(self.Fm)) != 0:
-                Fm = self.Fm
-            else:
-                print(f"Read data from file {self.fp_name}{self.ftype}")
-                Fm = imageio.imread(self.fp_name+self.ftype)
-                if Fm.ndim==3:
-                    Fm = Fm[:,:,0]
-                Fm = np.asarray(Fm,dtype=np.float64)
+            Fm = self.Fm
 
         N = len(Fm[0])
 
@@ -810,45 +764,9 @@ class PhaseRetrieval:
         Fr = Fr * calc_alpha(Fm, Fr) #scale Fr to best match Fm, see DeLong1996
         G = rms_diff(Fm, Fr)
 
-        if mov==0 and signal_data is not None and signal_label is not None:
+        if signal_data is not None and signal_label is not None:
             signal_data.emit(0, Fm)
             signal_label.emit(self.units)
-        elif mov==1:
-            # Interpret image data as row-major instead of col-major
-            pg.setConfigOptions(imageAxisOrder='row-major')
-            pg.mkQApp()
-            win = pg.GraphicsWindow()
-            #win.resize(800,500)
-            win.setWindowTitle('Phase Retrieval - SHG FROG')
-            #win.show()
-
-            p1 = win.addPlot(title='Orig. FROG trace')
-            img1 = pg.ImageItem()
-            p1.addItem(img1)
-            img1.setImage(Fm)
-            p1.setLabel('bottom','Delay [%s]' % dtunit)
-            p1.setLabel('left','SH freq [%s]' % dvunit)
-
-            p2 = win.addPlot()
-            img2 = pg.ImageItem()
-            p2.addItem(img2)
-            p2.setLabel('bottom','Delay [%s]' % dtunit)
-            p2.setLabel('left','SH freq [%s]' % dvunit)
-
-            win.nextRow()
-            p3 = win.addPlot(colspan=2)
-            p3.setLabel('bottom','Time [%s]' % dtunit)
-            p3.setLabel('left','|E|^2 & ang(E)')
-            p3p = p3.plot(tpxls,np.zeros(N),pen=(255,0,0))
-            p3p2= p3.plot(tpxls,np.zeros(N),pen=(0,255,0))
-
-            win.nextRow()
-            p4 = win.addPlot(colspan=2)
-            p4.setLabel('bottom','Frequency [%s]' % dvunit)
-            p4.setLabel('left','|E|^2 & ang(E)')
-            p4p = p4.plot(vpxls,np.zeros(N),pen=(255,0,0))
-            p4p2= p4.plot(vpxls,np.zeros(N),pen=(0,255,0))
-
 
         #  --------------------------------------------------
         #  F R O G   I T E R A T I O N   A L G O R I T H M
@@ -857,9 +775,6 @@ class PhaseRetrieval:
         while G>self.GTol and iteration<self.max_iter:
             # Keep count of no. of iterations
             iteration += 1
-            if mov==2:
-                print_iter_update(iteration, G)
-                # print(f"Iteration number: {iteration} Error: {G:.04f}")
 
             # Check method to use. Have to run this inside the loop because method
             # may vary depending on iter.
@@ -907,31 +822,19 @@ class PhaseRetrieval:
             FFTPt = np.fft.fftshift(np.fft.fft(np.fft.fftshift(Pt), axis=0))
             vPt_data = 2*np.pi*get_norm_intensity(FFTPt[:,0])
             vPt_angle = np.angle(FFTPt[:,0])+np.pi
-            if mov==0 and signal_data is not None and signal_title is not None:
+            if signal_data is not None and signal_title is not None:
                 signal_data.emit(1, Fr)
                 signal_data.emit(2, tPt_data)
                 signal_data.emit(3, tPt_angle)
                 signal_data.emit(4, vPt_data)
                 signal_data.emit(5, vPt_angle)
                 signal_title.emit(iteration, G)
-            elif mov==1:
-                p2.setTitle(title='Reconstructed: iter=%d Err=%.4f' % (iteration, G))
-                img2.setImage(Fr)
-                p3p.setData(tpxls, tPt_data)
-                p3p2.setData(tpxls, tPt_angle)
-                p4p.setData(vpxls, vPt_data)
-                p4p2.setData(vpxls, vPt_angle)
-
-                pg.QtGui.QApplication.processEvents()
-                #time.sleep(.1)
 
         #    self.screenshot()
         #  ------------------------------------------------------------
         #  E N D   O F   A L G O R I T H M
         #  ------------------------------------------------------------
 
-        # Save the complex electric field for test purpose
-        #np.savetxt('seed/seed_new.input', np.column_stack([Pt.real, Pt.imag]))
 
         # Save reconstructed FROG trace in attributes
         self.Pt = Pt
@@ -1082,6 +985,10 @@ class PhaseRetrieval:
 if __name__ == '__main__':
 
     import matplotlib.pyplot as plt
+    import pathlib
+    import imageio
+    import yaml
+
 
     data_path = pathlib.Path(__file__).parents[1] / 'data'
 
