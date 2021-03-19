@@ -205,7 +205,7 @@ class PhaseRetrieval:
         # Possible values are "autocorr", "gauss", "custom"
         self._seed_mode = "autocorr"
         # Tolerance on the error
-        self.GTol = GTol
+        self._GTol = GTol
         # Algorithm choice
         # method[0]: makeFROGdomain      # 0,1,2,3
         # method[1]: makeFROGantialias   # 1 = antialias
@@ -228,11 +228,7 @@ class PhaseRetrieval:
         """ Sets the tolerance on the error between reconstructed and
         original FROG trace. If the error is smaller than the tolerance
         the retrieval ist stopped. """
-        self.GTol = val
-
-    def setFccdSig(self, dummy, val):
-        if dummy==2:
-            self.setFccd(val)
+        self._GTol = val
 
     def set_seed_mode(self, mode: str):
         """ Choose what seed is used in the retrieval. """
@@ -444,7 +440,7 @@ class PhaseRetrieval:
         if showautocor:
             plt.figure('Autocorrelation',figsize=(6, 4))
             plt.plot(
-                np.arange(-ccdsizet/2.*ccddt, ccdsizet/2.*ccddt, ccddt),
+                np.arange(-(ccdsizet/2.)*ccddt, ccdsizet/2.*ccddt, ccddt),
                 np.sum(ccdimg, 0)
                 )
             plt.title('Autocorrelation')
@@ -753,7 +749,7 @@ class PhaseRetrieval:
         #  F R O G   I T E R A T I O N   A L G O R I T H M
         #  --------------------------------------------------
 
-        while G>self.GTol and iteration<self.max_iter:
+        while G>self._GTol and iteration<self.max_iter:
             # Keep count of no. of iterations
             iteration += 1
 
@@ -898,7 +894,7 @@ class PhaseRetrieval:
         print_started_message()
 
         i = 1
-        while error > self.GTol and i <= self.max_iter:
+        while error > self._GTol and i <= self.max_iter:
             # Produce random array of integers from 0 to K-1
             s = np.random.permutation(range(K))
 
@@ -994,42 +990,3 @@ if __name__ == '__main__':
     plt.plot(t, 2*np.pi*get_norm_intensity(field.reshape(128,)))
     plt.plot(t, np.angle(field)+np.pi)
     plt.show()
-
-
-    #pg.setConfigOptions(imageAxisOrder='row-major')
-    #pg.mkQApp()
-    #win = pg.GraphicsWindow()
-    #p1 = win.addPlot(title='Orig. FROG trace')
-    #img1 = pg.ImageItem()
-    #p1.addItem(img1)
-    ##img1.setImage(Fm)
-    #p1.setLabel('bottom','Delay [%s]' % pr.units[0])
-    #p1.setLabel('left','SH freq [%s]' % pr.units[1])
-    #
-    #p2 = win.addPlot()
-    #img2 = pg.ImageItem()
-    #p2.addItem(img2)
-    #p2.setLabel('bottom','Delay [%s]' % pr.units[0])
-    #p2.setLabel('left','SH freq [%s]' % pr.units[1])
-    #
-    #win.nextRow()
-    #p3 = win.addPlot(colspan=2)
-    #p3.setLabel('bottom','Time [%s]' % pr.units[0])
-    #p3.setLabel('left','|E|^2 & ang(E)')
-    ##p3p = p3.plot(tpxls,np.zeros(N),pen=(255,0,0))
-    ##p3p2= p3.plot(tpxls,np.zeros(N),pen=(0,255,0))
-    #
-    #win.nextRow()
-    #p4 = win.addPlot(colspan=2)
-    #p4.setLabel('bottom','Frequency [%s]' % pr.units[1])
-    #p4.setLabel('left','|E|^2 & ang(E)')
-    ##p4p = p4.plot(vpxls,np.zeros(N),pen=(255,0,0))
-    ##p4p2= p4.plot(vpxls,np.zeros(N),pen=(0,255,0))
-    #win.show()
-
-    #pr.prepFROG(showprogress=1,showautocor=1)
-    #pr.retrievePhase(mov=1)
-
-    #im = plt.imshow(pr.Fm,cmap='hot')
-    #plt.colorbar(im, orientation='horizontal')
-    #plt.show()
