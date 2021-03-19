@@ -695,7 +695,7 @@ class PhaseRetrieval:
         if units is None:
             dtunit = self.units[0]
             dvunit = self.units[1]
-        print(f'prepFROG: dt: {dtperpx}{dtunit} dv: {dvperpx}{dvunit}')
+        # print(f'prepFROG: dt: {dtperpx:.6f}{dtunit} dv: {dvperpx:.6f}{dvunit}')
 
         # x-axis labels for plots
         tpxls = make_axis(N, dtperpx)
