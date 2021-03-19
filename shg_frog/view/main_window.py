@@ -61,7 +61,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # Set window icon
         self.setWindowIcon(QtGui.QIcon(str(gui_path / 'icon.png')))
 
-        self.menu_exit.triggered.connect(self.close)
+        self.menu_exit.triggered.connect(self.close_action)
 
         # Timer used to update certain values with a fixed interval (Timer starts after connecting)
         self.update_timer = QtCore.QTimer()
@@ -74,10 +74,10 @@ class MainWindow(QtWidgets.QMainWindow):
         # Measure button
         self.btn_measure.toggled.connect(self.measure_action)
 
-        # Save button
+        # Save measurement button
         self.btn_save.clicked.connect(self.save_action)
 
-        # Load button
+        # Load measurement button
         self.btn_load.clicked.connect(self.load_action)
 
         # Create Parametertree from FrogParams class
@@ -116,11 +116,18 @@ class MainWindow(QtWidgets.QMainWindow):
         # Phase retrieve button
         self.btn_phase.clicked.connect(self.phase_action)
 
+        # Load recent settings
+        self.frog.parameters.restore_state()
+        # Load test trace at start up
+        self.load_test_trace()
 
     def print_changes(self, val: bool):
         """ Control whether parameter changes are printed. """
         self.par_class.print_par_changes(val)
 
+    def close_action(self):
+        self.frog.parameters.save_state()
+        self.close()
 
     @QtCore.pyqtSlot(bool)
     def connect_action(self, checked):
@@ -266,6 +273,12 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             print('Data not saved.')
 
+
+    def load_test_trace(self):
+        """ Load the test trace """
+        path = pathlib.Path(__file__).parents[1] / "data"
+        plot_data = self.frog.load_measurement_data(path)
+        self.graphics_widget.update_graphics(2, plot_data)
 
     def load_action(self):
         """ Open dialog to choose a measurement data to load. """
