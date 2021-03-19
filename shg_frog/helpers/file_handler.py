@@ -5,6 +5,7 @@ from time import strftime
 
 import pathlib
 import yaml
+import pickle
 import imageio
 import numpy as np
 
@@ -50,6 +51,7 @@ class FileHandler:
     name_frog = 'frog.tiff'
     name_config = 'config.yml'
     name_seed = 'seed.dat'
+    name_parameters = 'params.pl'
 
     def _get_new_measurement_path(self) -> pathlib.Path:
         """Returns a path for the next measurement."""
@@ -97,6 +99,22 @@ class FileHandler:
         """ Save current config to file in CONFIG_DIR """
         pass
 
+    def save_settings(self, param_state):
+        """ Saves pyqtgraph Parametertree saveState object
+        into a pickle file in the config folder.
+        """
+        with open(CONFIG_DIR / self.name_parameters, 'wb') as f:
+            pickle.dump(param_state, f)
+
+    def load_settings(self):
+        """ Returns the pyqtgraph Parametertree state object """
+        try:
+            with open(CONFIG_DIR / self.name_parameters, 'rb') as f:
+                return pickle.load(f)
+        except FileNotFoundError:
+            print('No previously saved settings found.')
+            return None
+
     def get_measurement_data(self, measurement_path: pathlib.Path) -> Data:
         """ Get config, settings (meta), and image data of an old measurement. """
         # Load settings
@@ -129,3 +147,4 @@ class FileHandler:
                 retrieved pulse.
         """
         np.savetxt(CONFIG_DIR / self.name_seed, seed.view(float).reshape(-1, 2))
+

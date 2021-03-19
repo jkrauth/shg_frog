@@ -297,6 +297,7 @@ class FrogParams:
                               type='group',
                               children=params)
 
+
         ### Some settings regarding CCD parameters ###
         # Create limits for crop settings
         crop_par = self.par.param('Camera').child('Crop Image')
@@ -327,6 +328,16 @@ class FrogParams:
         # Always update number of steps, given by start pos and step size
         start_par.sigValueChanged.connect(self.show_steps)
         step_par.sigValueChanged.connect(self.show_steps)
+
+    def save_state(self):
+        """ Save current parameter tree settings into a file. """
+        FileHandler().save_settings(self.par.saveState())
+
+    def restore_state(self):
+        """ Load previously save parameter tree settings from file. """
+        settings = FileHandler().load_settings()
+        if settings is not None:
+            self.par.restoreState(settings)
 
     def set_crop_limits(self, param, changes):
         max_width, max_height = self.get_sensor_size()
