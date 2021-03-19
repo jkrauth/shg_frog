@@ -1,0 +1,4 @@
+include shg_frog/view/GUI/main_window.ui
+include shg_frog/data/frog.tiff
+include shg_frog/data/meta.yml
+include shg_frog/data/params.default
