@@ -1,0 +1,155 @@
+- children:
+  - compactHeight: false
+    name: prepFROG Size
+    type: int
+    value: 128
+  - name: Algorithm
+    type: list
+    value: GP
+    values:
+      GP: GP
+      Ptychographic: PT
+  - name: Seed
+    type: list
+    value: autocorr
+    values:
+      Autocorr: autocorr
+      Custom: custom
+      Gauss: gauss
+  - compactHeight: false
+    name: Max. Iterations
+    type: int
+    value: 200
+  - compactHeight: false
+    name: G Tolerance
+    type: float
+    value: 0.001
+  name: Phase Retrieval
+  type: group
+  visible: true
+- children:
+  - name: Center
+    type: float
+    value: 390.0
+  - name: Span
+    type: float
+    value: 20.0
+  - name: CW mode
+    type: bool
+    value: true
+  - name: Rep. time
+    type: float
+    value: 36
+  - name: Sampling
+    type: int
+    value: 201
+  name: ANDO Spectrometer
+  type: group
+  visible: false
+- children:
+  - compactHeight: false
+    dec: true
+    name: Exposure
+    siPrefix: true
+    step: 1
+    suffix: s
+    type: float
+    value: 0.036
+  - compactHeight: false
+    dec: false
+    name: Gain
+    step: 1
+    type: float
+    value: 0
+  - children:
+    - compactHeight: false
+      limits:
+      - 1
+      - 1936
+      name: Width
+      step: 2
+      type: int
+      value: 600
+    - compactHeight: false
+      limits:
+      - 1
+      - 1216
+      name: Height
+      step: 2
+      type: int
+      value: 10
+    - compactHeight: false
+      name: Xpos
+      step: 2
+      type: int
+      value: 400
+    - compactHeight: false
+      name: Ypos
+      step: 2
+      type: int
+      value: 470
+    expanded: false
+    name: Crop Image
+    type: group
+  - children:
+    - name: Mode
+      type: list
+      value: 1
+      values:
+        'Off': 0
+        'On': 1
+      visible: false
+    - name: Source
+      type: list
+      value: External
+      values:
+        External: Line1
+        Freerun: Freerun
+      visible: true
+    name: Trigger
+    type: group
+  - name: PixelFormat
+    type: list
+    value: Mono8
+    values:
+      Mono12: Mono12
+      Mono8: Mono8
+  name: Camera
+  type: group
+  visible: false
+- children:
+  - name: Position
+    readonly: true
+    suffix: um
+    type: float
+    value: 0.0
+  - compactHeight: false
+    name: GoTo
+    suffix: um
+    type: float
+    value: 0.0
+  - compactHeight: false
+    limits:
+    - 0
+    - 25000
+    name: Offset
+    suffix: um
+    type: float
+    value: 11370
+  - compactHeight: false
+    name: Start Position
+    suffix: um
+    type: float
+    value: -256
+  - compactHeight: false
+    name: Step Size
+    suffix: um
+    type: float
+    value: 4.0
+  - name: Number of steps
+    readonly: true
+    type: int
+    value: 128
+  name: Stage
+  type: group
+  visible: false
