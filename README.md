@@ -34,21 +34,25 @@ The phase retrieval window:
 
 ### Download and start
 
-Download this repository and adapt the config.yml file in the `Config` folder to your setup.
-
-In the console go to the package directory and install the package by
+Install the FROG software (ideally in a virtual python environment) by
 
 ```console
-pip install .
+pip install git@github.com:jkrauth/shg_frog.git
 ```
 
 Run it by
 
 ```console
-python -m shg_frog [-h]
+shg_frog [-h]
 ```
 
-Run [-h] for to see available options.
+with '-h' to see available options.
+
+After you started the software once, you will have a `.frog_config` folder in your home directory. It contains a `config.yml` file that should be adapted to your setup.
+
+Measurement data will be saved into a `frog_data`folder, also in your home directory.
+
+Upon startup you will have example data loaded the you can use for a first pulse reconstruction. This is overwritten as soon as you do a measurement.
 
 ### Hardware
 
