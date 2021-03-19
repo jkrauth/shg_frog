@@ -168,7 +168,7 @@
   <widget class="QStatusBar" name="statusbar"/>
   <action name="menu_exit">
    <property name="text">
-    <string>Exit</string>
+    <string>Save settings and exit</string>
    </property>
   </action>
  </widget>
