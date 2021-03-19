@@ -33,11 +33,12 @@ setup(
         "Intended Audience :: Science/Research",
     ],
     packages=find_packages(),
+    include_package_data=True,
     python_requires='>=3.7',
     install_requires=requirements,
-    # entry_points={
-    #     'console_scripts': [
-    #         'shg_frog = shg_frog.__main__:main',
-    #     ],
-    # }
+    entry_points={
+        'console_scripts': [
+            'shg_frog = shg_frog.__main__:main',
+        ],
+    }
 )
