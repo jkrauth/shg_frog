@@ -39,8 +39,6 @@ Date created: 2019/11/27
 """
 import numpy as np
 
-import pyqtgraph as pg
-
 from ..helpers.file_handler import FileHandler
 
 
@@ -177,15 +175,6 @@ class PhaseRetrieval:
         # phase retrieval algorithm, sometimes later also called N
         self.prep_size = prep_size
 
-        # Difference in delay between consecutive pixels
-        # of the starting image in ps
-        self.ccddt = 0.002
-
-        # Difference in frequency between consecutive pixels
-        # of the starting image in THz
-        self.ccddv = 0.2
-
-
         ### Parameters used by phaseRetrieve ###
 
         # Difference in time-delay (dt) between consecutive pixels. This
@@ -200,10 +189,7 @@ class PhaseRetrieval:
         # the units of frequency.
         self.units = ['ps','THz']
 
-
         ### FROG traces ###
-        # Measured trace
-        self.Fccd = None
         # Preparated trace, created by self.setPrepFrogTrace()
         self.Fm = np.zeros((self.prep_size,self.prep_size)).astype(np.float64)
         # Reconstructed electric field in time domain, created by retrieval function
@@ -220,8 +206,6 @@ class PhaseRetrieval:
         self._seed_mode = "autocorr"
         # Tolerance on the error
         self.GTol = GTol
-        # 0: No updates while solving. 1: Output movie. 2: Print text.
-        self.mov = 1
         # Algorithm choice
         # method[0]: makeFROGdomain      # 0,1,2,3
         # method[1]: makeFROGantialias   # 1 = antialias
@@ -229,9 +213,6 @@ class PhaseRetrieval:
         # method[3]: guessPulseantialias # not used
         self.method = [0,0,0,0]
 
-        # G=RMS difference in entries of Fm and alpha*Fr
-        # (where Fm is normalized so max(Fm)=1 and alpha is whatever
-        # value minimizes G.) See DeLong1996
 
     def set_size(self, val: int):
         """ Sets the size that is used by prepFROG to prepare the
@@ -248,9 +229,6 @@ class PhaseRetrieval:
         original FROG trace. If the error is smaller than the tolerance
         the retrieval ist stopped. """
         self.GTol = val
-
-    def setFccd(self, val):
-        self.Fccd = val
 
     def setFccdSig(self, dummy, val):
         if dummy==2:
@@ -314,8 +292,8 @@ class PhaseRetrieval:
         In the end it saves the time steps per pixel into self.dtperpx
         and the prepared frog trace into self.Fm
         Arguments:
-        ccddt -- time step per pixel
-        ccddv -- frequency step per pixel
+        ccddt -- time step per pixel, in ps
+        ccddv -- frequency step per pixel, in THz
         ccdimg -- frog trace, frequencies on axis 0, delays on axis 1.
         """
         print('Prepare FROG trace...')
@@ -762,6 +740,9 @@ class PhaseRetrieval:
 
         # Calculate FROG error G, see DeLong1996
         Fr = Fr * calc_alpha(Fm, Fr) #scale Fr to best match Fm, see DeLong1996
+        # G=RMS difference in entries of Fm and alpha*Fr
+        # (where Fm is normalized so max(Fm)=1 and alpha is whatever
+        # value minimizes G.) See DeLong1996
         G = rms_diff(Fm, Fr)
 
         if signal_data is not None and signal_label is not None:
