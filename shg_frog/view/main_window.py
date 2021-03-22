@@ -61,7 +61,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # Set window icon
         self.setWindowIcon(QtGui.QIcon(str(gui_path / 'icon.png')))
 
-        self.menu_exit.triggered.connect(self.close_action)
+        self.menu_exit.triggered.connect(self.save_and_close_action)
 
         # Timer used to update certain values with a fixed interval (Timer starts after connecting)
         self.update_timer = QtCore.QTimer()
@@ -125,7 +125,10 @@ class MainWindow(QtWidgets.QMainWindow):
         """ Control whether parameter changes are printed. """
         self.par_class.print_par_changes(val)
 
-    def close_action(self):
+    def save_and_close_action(self):
+        """ (Disconnect devices, ) Save parameter state and close window. """
+        if self.btn_connect.isChecked():
+            self.btn_connect.toggle()
         self.frog.parameters.save_state()
         self.close()
 
@@ -138,8 +141,7 @@ class MainWindow(QtWidgets.QMainWindow):
         btn = self.DEFAULTS['btn_connect']
         col = self.DEFAULTS['btn_color']
         # Get dropdown position
-        # index = self.dropdown.currentIndex() # not used at the moment.
-        index = 0
+        index = self.dropdown.currentIndex() # not used at the moment.
         # Do GUI actions
         # self.dropdown.setEnabled(not checked) # only use once ANDO implemented
         if index==0:
@@ -160,7 +162,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self.par.param('Stage').hide()
         # needed for updating par tree in GUI
         self.parameter_tree.setParameters(self.par, showTop=False)
-
 
     def tree_retrieval_actions(self):
         """ Connect retrieval options. """

@@ -56,11 +56,13 @@ class FROG:
         """Connect to the devices."""
         self.stage.initialize()
         self.camera.initialize()
+        print("Devices connected!")
 
     def close(self):
         """Close connection with devices."""
         self.stage.close()
         self.camera.close()
+        print("Devices disconnected!")
 
 
     def measure(self, sig_progress, sig_measure):
