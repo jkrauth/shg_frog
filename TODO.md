@@ -2,8 +2,6 @@
 
 ## Functionality
 
-- Add option to save pulse_field or frog image to file
-- Add option to save seed into a .shg_frog folder in home dir
 - fully implement ANDO spectrometer option
 - Add an input for the center wavelength
 - Add warning if camera is saturating.
