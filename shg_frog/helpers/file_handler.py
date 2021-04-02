@@ -97,10 +97,6 @@ class FileHandler:
             config = yaml.load(f, Loader=yaml.FullLoader)
         return config
 
-    def save_main_config(self, config: dict):
-        """ Save current config to file in CONFIG_DIR """
-        pass
-
     def save_settings(self, param_state):
         """ Saves pyqtgraph Parametertree saveState object
         into a pickle file in the config folder.
@@ -155,5 +151,5 @@ class FileHandler:
         seed -- vertical complex numpy array: the complex field of a
                 retrieved pulse.
         """
+        print("Reconstructed trace saved as seed to ", CONFIG_DIR)
         np.savetxt(CONFIG_DIR / self.name_seed, seed.view(float).reshape(-1, 2))
-
