@@ -55,7 +55,8 @@ class FileHandler:
     name_parameters = 'params.pl'
     name_default_params = 'params.default'
 
-    def _get_new_measurement_path(self) -> pathlib.Path:
+    @staticmethod
+    def _get_new_measurement_path() -> pathlib.Path:
         """Returns a path for the next measurement."""
         today = strftime("%Y%m%d")
         today_path = DATA_DIR / today

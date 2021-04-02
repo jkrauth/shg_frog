@@ -981,7 +981,6 @@ if __name__ == '__main__':
     t = make_axis(128, dt)
 
     #pr.prepFROG(ccddt=dt, ccddv=dF, ccdimg=trace)
-    pr.load_seed(data_path / 'seed')
     field, error, frog_reconstructed = pr.retrievePhase(Fm=trace, dtperpx=dt)
     #field, error, frog_reconstructed = pr.ePIE_fun_FROG(I=trace, dt=dt, df=dF)
     #FileHandler().save_seed(field)
