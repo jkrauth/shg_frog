@@ -16,7 +16,7 @@ import pyqtgraph as pg
 
 from . import general_worker
 from .roi_window import ROIGraphics
-from .retrieval_window import RetrievalGraphics
+from .retrieval_window import RetrievalWindow
 from ..helpers.file_handler import DATA_DIR, INTERNAL_DATA_DIR
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -103,14 +103,14 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Create instance for region of interest (ROI) window
         # This window will be opened and closed by the class' methods
-        self.window_roi = ROIGraphics()
+        self.roi_win = ROIGraphics()
         self.btn_roi.clicked.connect(self.roi_action)
 
         # Attribute for measurement thread
         self.measure_thread = None
 
         # Attribute for phase retrieval window and thread
-        self.window_retrieval = None
+        self.retrieval_win = None
         self.phase_thread = None
 
         # Phase retrieve button
@@ -217,17 +217,17 @@ class MainWindow(QtWidgets.QMainWindow):
     def roi_action(self):
         """Defines the actions when calling the ROI button"""
         # Create ROI window with a full image taken by the camera
-        self.window_roi.show()
-        self.window_roi.set_image(self.frog.camera.take_full_img())
+        self.roi_win.show()
+        self.roi_win.set_image(self.frog.camera.take_full_img())
         # Set the ROI frame according to the crop parameters in parameter tree
-        self.window_roi.update_ROI_frame(*self.par_class.get_crop_par())
+        self.roi_win.update_ROI_frame(*self.par_class.get_crop_par())
         # If ROI changes, update parameters, update_crop_param() makes sure that crop parameters
         # don't extend over edges of image. This means that the crop parameters which are set
         # can differ from the roi frame in the roi window. In a second step the roi frame is then
         # updated to reflect the actual crop parameters.
-        self.window_roi.roi.sigRegionChangeFinished.connect(self.par_class.update_crop_param)
+        self.roi_win.roi.sigRegionChangeFinished.connect(self.par_class.update_crop_param)
         self.par.sigTreeStateChanged.connect(\
-            lambda param,changes: self.window_roi.update_ROI_frame(*self.par_class.get_crop_par()))
+            lambda param,changes: self.roi_win.update_ROI_frame(*self.par_class.get_crop_par()))
 
 
     @QtCore.pyqtSlot(bool)
@@ -314,22 +314,22 @@ class MainWindow(QtWidgets.QMainWindow):
             print('Error: No data for phase retrieval found.')
             return
         # Open retrieval window, if necessary close previous one to avoid warning.
-        if self.window_retrieval is not None:
+        if self.retrieval_win is not None:
             # This avoids a warning when you start a retrieval while the
             # window is still open.
-            self.window_retrieval.close()
-        self.window_retrieval = RetrievalGraphics()
-        self.window_retrieval.show()
+            self.retrieval_win.close()
+        self.retrieval_win = RetrievalWindow(self.frog.algo)
+        self.retrieval_win.show()
         # Create thread
         self.phase_thread = general_worker.RetrievalThread(self.frog.retrieve_phase)
         # Actions when retrieval finishes
         self.phase_thread.finished.connect(self.phase_thread.deleteLater)
         self.phase_thread.finished.connect(self.del_pthread)
         # Connect signals
-        self.phase_thread.sig_retdata.connect(self.window_retrieval.update_graphics)
-        self.phase_thread.sig_retlabels.connect(self.window_retrieval.update_labels)
-        self.phase_thread.sig_rettitles.connect(self.window_retrieval.update_title)
-        self.phase_thread.sig_retaxis.connect(self.window_retrieval.set_axis)
+        self.phase_thread.sig_retdata.connect(self.retrieval_win.graphics.update_graphics)
+        self.phase_thread.sig_retlabels.connect(self.retrieval_win.graphics.update_labels)
+        self.phase_thread.sig_rettitles.connect(self.retrieval_win.graphics.update_title)
+        self.phase_thread.sig_retaxis.connect(self.retrieval_win.graphics.set_axis)
         # Run phase retrieval
         self.phase_thread.start()
 
@@ -348,10 +348,10 @@ class FrogGraphics(pg.GraphicsLayoutWidget):
         # Enable antialiasing for prettier plots
         pg.setConfigOptions(antialias=True)
 
-        pl = self.addPlot(title='Single Slice')
-        pl.setLabel('bottom', "Frequency", units='AU')
-        pl.setLabel('left', "Intensity", units='AU')
-        self.plot1 = pl.plot()
+        data_slice = self.addPlot(title='Single Slice')
+        data_slice.setLabel('bottom', "Frequency", units='AU')
+        data_slice.setLabel('left', "Intensity", units='AU')
+        self.plot1 = data_slice.plot()
         vb_full = self.addPlot(title='FROG Trace')
         vb_full.setLabel('bottom',"Time Delay", units='AU')
         vb_full.setLabel('left',"Frequency", units='AU')
