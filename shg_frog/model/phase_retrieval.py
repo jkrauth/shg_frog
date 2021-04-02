@@ -54,12 +54,12 @@ def calc_alpha(Fm, Fr):
     result = np.sum(Fm*Fr)/np.sum(np.square(Fr))
     return result
 
-def parity(x):
+def parity(val):
     """
     1 for odd, 0 for even. Don't delete! It looks like it's not used
     in the program, but it can be called by the 'method' strings.
     """
-    result = int(x-2*np.floor(x/2.))
+    result = int(val-2*np.floor(val/2.))
     return result
 
 def make_axis(length: int, step: float) -> np.ndarray:
@@ -193,6 +193,7 @@ class PhaseRetrieval:
         # Preparated trace, created by self.setPrepFrogTrace()
         self.Fm = np.zeros((self.prep_size,self.prep_size)).astype(np.float64)
         # Reconstructed electric field in time domain, created by retrieval function
+        # Can also be used as seed
         self.Pt = None
         # Reconstructed trace, created by retrieval function
         self.Fr = None
