@@ -7,7 +7,7 @@ Software for measurement and characterization of ultra-fast laser pulses using t
 > Want to know more about FROG?
 > R. Trebino, Frequency-Resolved Optical Gating: the Measurement of Ultrashort Laser Pulses, Kluwer, Boston (2002)
 
-Commercial devices exist, but are rather expensive. A home-build device can save a lot of money.
+Commercial devices exist, but are rather expensive. A home-built device can save a lot of money.
 The code in this repository provides:
 
 * A graphical user interface for the measurement of the so-called FROG trace.
@@ -28,6 +28,8 @@ The phase retrieval window:
 
 ### Software dependencies
 
+* Python version = 3.7
+
 * most of the dependencies (pyqt5, pyqtgraph, pyyaml, matplotlib, imageio) are installed automatically with the pip command. Additionally you need to install
   * [Vimba SDK](https://www.alliedvision.com/en/products/software.html) from Allied Vision
 * QtDesigner, in case you want to modify the GUI
@@ -37,7 +39,7 @@ The phase retrieval window:
 Install the FROG software (ideally in a virtual python environment) by
 
 ```console
-pip install git@github.com:jkrauth/shg_frog.git
+pip install git+https://github.com:jkrauth/shg_frog.git
 ```
 
 Run it by
@@ -52,7 +54,18 @@ After you started the software once, you will have a `.frog_config` folder in yo
 
 Measurement data will be saved into a `frog_data`folder, also in your home directory.
 
-Upon startup you will have example data loaded the you can use for a first pulse reconstruction. This is overwritten as soon as you do a measurement.
+Upon startup you will have example data loaded which you can use for a first pulse reconstruction. This is overwritten as soon as you do a measurement.
+
+### Notes on Terminology and Parameter options 
+**Phase Retrieval**
+
+* The GP algorithm gives generally better results with a lower error (G in the phase retrieval GUI). In some cases, however, it does not converge. In these cases the ptychographic algorithm provides a  solution. 
+* The "prepFrog" parameter should be 128 unless modifications to the Phase Retrieval GUI are made. 
+
+**Stage**
+
+* Offset refers to the stage position (i.e. mirror position) at which the FROG signal is maximum and is the point around which the FROG trace is measured, over a range specified by "Number of steps" and "Step size". 
+
 
 ### Hardware
 
@@ -77,5 +90,5 @@ Upon startup you will have example data loaded the you can use for a first pulse
 
 ## Contact
 
-* Repo owner:  Julian Krauth, j.krauth@vu.nl
+* Repo owner:  Julián Krauth, j.krauth@vu.nl
 * Institution: Vrije Universiteit Amsterdam, Faculty of Sciences, The Netherlands
