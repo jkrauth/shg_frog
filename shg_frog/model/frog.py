@@ -238,7 +238,7 @@ class FrogParams:
             )
 
 
-        ### Some settings regarding CCD parameters ###
+        ### Some settings regarding camera parameters ###
         # Create limits for crop settings
         crop_par = self.par.param('Camera').child('Crop Image')
         width_par = crop_par.child('Width')

@@ -211,7 +211,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 'Xpos':'offsetx','Ypos':'offsety'}
         for param, change, data in changes:
             if change=='value':
-                self.frog.camera.img_format(**{dictio[param.name()]:data})
+                self.frog.camera.set_roi(**{dictio[param.name()]:data})
                 #print dict[param.name()], data
 
     def roi_action(self):
