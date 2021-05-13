@@ -119,7 +119,7 @@ class FROG:
             'center position': self.parameters.get_center_position(),
             'start position': self.parameters.get_start_position(),
             'step number': self.parameters.get_step_num(),
-            'camera': self.camera.camera_id,
+            'camera': self.camera.idn,
             'bit depth': self.camera.pix_format,
             'step size': step_size,
             'ccddt': ccddt,
@@ -238,7 +238,7 @@ class FrogParams:
             )
 
 
-        ### Some settings regarding CCD parameters ###
+        ### Some settings regarding camera parameters ###
         # Create limits for crop settings
         crop_par = self.par.param('Camera').child('Crop Image')
         width_par = crop_par.child('Width')
