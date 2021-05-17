@@ -3,6 +3,6 @@ pyqtgraph
 matplotlib
 pyyaml
 imageio
-labdevices
+labdevices>=0.10.2
 docopt
 prologix-gpib-ethernet@https://github.com/nelsond/prologix-gpib-ethernet/tarball/master#egg=prologix-gpib-ethernet-0.1.2
