@@ -87,8 +87,3 @@ Upon startup you will have example data loaded which you can use for a first pul
 * **Currently not fully implemented**: There is also an option to measure with a Spectrometer for comparison. In our case we used the ANDO Spectrometer AQ-6315A in combination with a prologix-gpib-ethernet adapter. This option is not ideal because the measurements take much more time which you might want to avoid if your laser is not too stable. Still, for calibration it might be useful.
 
 * The driver for camera and spectrometer is included in the labdevices package (see requirements).
-
-## Contact
-
-* Repo owner:  Julián Krauth, j.krauth@vu.nl
-* Institution: Vrije Universiteit Amsterdam, Faculty of Sciences, The Netherlands
